@@ -71,7 +71,8 @@ addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
 addEventListener('blur', () => keys.clear());
 cv.addEventListener('pointerdown', e => {
   if (joy.id !== null) return;
-  joy.id = e.pointerId; joy.ox = joy.x = e.clientX; joy.oy = joy.y = e.clientY;
+  const b = joyBase();
+  joy.id = e.pointerId; joy.ox = b.x; joy.oy = b.y; joy.x = e.clientX; joy.y = e.clientY;
   cv.setPointerCapture(e.pointerId);
 });
 cv.addEventListener('pointermove', e => { if (e.pointerId === joy.id) { joy.x = e.clientX; joy.y = e.clientY; } });
@@ -79,8 +80,11 @@ const endJoy = e => { if (e.pointerId === joy.id) joy.id = null; };
 cv.addEventListener('pointerup', endJoy);
 cv.addEventListener('pointercancel', endJoy);
 
+// analógico fixo: embaixo, no centro da tela (vale para horizontal e vertical)
+function joyBase() { return { x: W / 2, y: H - Math.max(95, Math.min(140, H * 0.16)) }; }
 function readInput() {
   if (joy.id !== null) {
+    const b = joyBase(); joy.ox = b.x; joy.oy = b.y;
     let x = (joy.x - joy.ox) / 50, y = (joy.y - joy.oy) / 50;
     const m = Math.hypot(x, y);
     if (m < 0.15) return { x: 0, y: 0 };
@@ -264,6 +268,7 @@ function sendPick(i) {
 // ---------- sair ----------
 function leave(silent) {
   clearInterval(hostTimer); clearInterval(clientTimer);
+  Sfx.stopMusic(); prevA = null;
   if (peer) { try { peer.destroy(); } catch (e) {} }
   peer = null; hostConn = null; conns.clear(); roster = new Map();
   sim = null; started = false; myId = null; mode = null;
@@ -275,6 +280,7 @@ function leave(silent) {
 
 // ---------- escolhas de nível ----------
 function choose(i) {
+  Sfx.play.pick();
   sendPick(i);
   for (const b of $('#cards').children) b.disabled = true;
 }
@@ -320,6 +326,32 @@ function updateOver(view) {
     show('#over');
   } else if (!view.ov && overShown) {
     overShown = false; hideScreens();
+  }
+}
+
+// ---------- sons a partir do estado do jogo ----------
+let prevA = null;
+function playSounds(v, me, boss) {
+  const S = Sfx.play, P = prevA;
+  const cur = { tm: v.tm, k: v.k, b: v.b.length, n: v.n.length, np: v.p.length, ov: v.ov, boss,
+    lv: me ? me.lv : 0, xp: me ? me.xp : 0, d: me ? me.d : 0, h: me ? me.h : 0 };
+  prevA = cur;
+  if (!P || v.tm < P.tm) { if (!v.ov) Sfx.startMusic(); return; } // início ou reinício
+  if (v.ov) { if (!P.ov) { Sfx.stopMusic(); v.w ? S.win() : S.lose(); } return; }
+  if (P.ov) Sfx.startMusic();
+  if (v.pz) return;
+  Sfx.setIntensity(boss || v.tm > 420);
+  if (boss && !P.boss) S.boss();
+  if (cur.np > P.np) S.join();
+  if (cur.b > P.b) S.shoot();
+  if (cur.n > P.n) S.nova();
+  if (cur.k > P.k) S.kill();
+  if (me) {
+    if (cur.lv > P.lv) S.level();
+    else if (cur.xp > P.xp) S.gem(cur.xp);
+    if (cur.h) S.hurt();
+    if (cur.d && !P.d) S.down();
+    if (!cur.d && P.d) S.revive();
   }
 }
 
@@ -562,10 +594,10 @@ function render(view, now, dt) {
   }
   // joystick (analógico digital)
   if (joy.id === null && isTouch && !view.ov) {
-    const hx = 90, hy = H - 100;
-    ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 3;
+    const jb = joyBase(), hx = jb.x, hy = jb.y;
+    ctx.strokeStyle = 'rgba(255,255,255,.22)'; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(hx, hy, 50, 0, Math.PI * 2); ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.beginPath(); ctx.arc(hx, hy, 22, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.2)'; ctx.beginPath(); ctx.arc(hx, hy, 22, 0, Math.PI * 2); ctx.fill();
   }
   if (joy.id !== null) {
     ctx.strokeStyle = 'rgba(255,255,255,.3)'; ctx.lineWidth = 3;
@@ -575,6 +607,7 @@ function render(view, now, dt) {
     ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.arc(joy.ox + dx, joy.oy + dy, 22, 0, Math.PI * 2); ctx.fill();
   }
 
+  playSounds(view, me, boss !== null);
   updateChoices(me);
   updateOver(view);
 }
@@ -603,6 +636,15 @@ requestAnimationFrame(frame);
 try { $('#name').value = localStorage.getItem('nsf-name') || ''; } catch (e) {}
 const qs = new URLSearchParams(location.search).get('sala');
 if (qs) { $('#code').value = qs.toUpperCase().slice(0, 4); setMsg('#menuMsg', 'Digite seu nome e toque em Entrar.'); }
+
+addEventListener('pointerdown', () => Sfx.init(), true);
+addEventListener('keydown', () => Sfx.init(), true);
+for (const b of document.querySelectorAll('.panel button')) b.addEventListener('click', () => Sfx.play.click());
+const SOUND_LABELS = ['🔊', '🔉', '🔇'];
+const SOUND_TIPS = ['Som e música ligados', 'Só efeitos (sem música)', 'Mudo'];
+function paintSound() { $('#btnSound').textContent = SOUND_LABELS[Sfx.mode]; $('#btnSound').title = SOUND_TIPS[Sfx.mode]; }
+paintSound();
+$('#btnSound').onclick = () => { Sfx.cycle(); paintSound(); toast(SOUND_TIPS[Sfx.mode]); };
 
 $('#btnHost').onclick = () => hostGame(false);
 $('#btnSolo').onclick = () => hostGame(true);
