@@ -1,6 +1,8 @@
 // Tela, controles e rede (PeerJS). O anfitrião roda a Sim; os outros só enviam comandos e desenham.
 'use strict';
 
+const VERSION = 'v3'; // mesmo número da entrada mais nova do diário (diario/diario.py)
+
 const ROOM_PREFIX = 'noitesemfim-mss-';
 const PEER_OPTS = {
   debug: 0,
@@ -633,6 +635,7 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 // ---------- botões ----------
+$('#version').textContent = 'sobrevivência online · ' + VERSION;
 try { $('#name').value = localStorage.getItem('nsf-name') || ''; } catch (e) {}
 const qs = new URLSearchParams(location.search).get('sala');
 if (qs) { $('#code').value = qs.toUpperCase().slice(0, 4); setMsg('#menuMsg', 'Digite seu nome e toque em Entrar.'); }
