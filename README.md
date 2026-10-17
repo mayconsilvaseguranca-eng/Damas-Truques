@@ -8,7 +8,7 @@ Jogo de sobrevivência no estilo Vampire Survivors, multiplayer online (até 4 j
 - **Jogar sozinho**: modo solo (o jogo pausa enquanto você escolhe melhorias).
 - **Controles**: celular — analógico digital fixo embaixo, no centro da tela; PC — WASD ou setas.
 - **Som**: botão 🔊 no canto alterna entre som + música, só efeitos e mudo. A música acelera quando o chefe aparece.
-- Os ataques são automáticos. A cada nível você escolhe 1 de 3 melhorias.
+- Os ataques são automáticos. A cada nível você escolhe 1 de 3 itens. O XP vai para o time todo.
 - Se cair, um amigo revive você ficando perto por 3 segundos.
 - Um chefe aparece a cada 3 minutos. Sobreviva 15 minutos para vencer.
 
@@ -20,3 +20,6 @@ Não precisa de servidor próprio: quem cria a sala roda o jogo no próprio apar
 - `sim.js` — regras do jogo (inimigos, armas, XP, níveis)
 - `game.js` — desenho, controles e conexão online
 - `audio.js` — efeitos sonoros e música, gerados por código (sem arquivos de áudio)
+- `icons.js` — desenhos dos itens, feitos por código
+- `tests/balanceamento.js` — simula partidas com bots para conferir a dificuldade
+- `diario/` — diário de atualizações

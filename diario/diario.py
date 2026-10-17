@@ -3,8 +3,18 @@
 # (versão, "dd/mm · hh:mm", título, pedido do usuário, [(Novo|Mudou|Corrigido, texto)]),
 # atualizar UPD e VERSION em game.js (mesmo número), e rodar: python3 diario/diario.py
 import html,os,sys
-UPD='16/10/2026, 16:05'
+UPD='17/10/2026, 01:14'
 V=[
+ ("v4","17/10 · 01:14","Itens com desenho e jogo balanceado",
+  "Deixar as escolhas de item mais visuais, com imagens e poucas palavras, e testar para balancear o jogo.",
+  [("Mudou","As cartas de subir de nível agora mostram um desenho grande de cada item, o nome curto e quadradinhos com o nível (o que pisca é o que você vai ganhar). Saiu o texto explicativo; ele aparece só se você parar o mouse em cima."),
+   ("Novo","Cor da borda da carta mostra o tipo: dourada para arma, azul para bônus, vermelha para a poção. Item que você ainda não tem ganha a etiqueta NOVO."),
+   ("Novo","Os itens que você já tem aparecem no canto de cima, com o nível de cada um."),
+   ("Mudou","Balanceamento testado com centenas de partidas simuladas por bots (sozinho, em 2 e em 4). Antes, sozinho morria com 2 a 4 minutos ainda no nível 2 a 4; agora os bots aguentam de 13 a 14,5 minutos e vencer os 15 exige jogar bem."),
+   ("Mudou","Sobe de nível bem mais rápido no começo, o Raio começa mais forte, a coleta de XP alcança mais longe e o primeiro chefe ficou mais fraco. Em compensação, os inimigos endurecem mais no fim da partida."),
+   ("Mudou","O XP agora vai para o time todo: quando alguém pega uma gema, todos ganham. Em grupo vêm mais inimigos, e eles ficam mais resistentes aos poucos."),
+   ("Corrigido","Com vários jogadores juntos, os empurrões das lâminas e explosões se somavam e formavam uma parede: nenhum inimigo encostava e o grupo nunca morria. Agora cada inimigo só pode ser empurrado a cada 0,4 segundo."),
+   ("Novo","Simulador de balanceamento no projeto (tests/balanceamento.js), para conferir os números depois de cada mudança.")]),
  ("v3","16/10 · 16:05","Diário e versão na tela inicial",
   "Fazer um diário para acompanhar as últimas atualizações, igual ao do Coringa 21, e mostrar a versão do jogo direto na tela inicial.",
   [("Novo","Este diário: cada mudança no jogo aparece aqui, com o seu pedido e o que mudou. A última atualização fica em destaque."),
@@ -154,8 +164,8 @@ td{{padding:5px 6px;border-bottom:1px solid var(--line)}}
     <h2>Como o jogo está agora</h2>
     <div class="grid">
       <div class="box"><h3>Online</h3><p>Até 4 jogadores por sala, com código de 4 letras ou link de convite. Quem cria a sala roda o jogo no próprio aparelho. Também dá para jogar sozinho (pausa ao escolher melhorias).</p></div>
-      <div class="box"><h3>Armas e melhorias</h3><ul><li>Raio Mágico, Lâminas Orbitais, Aura Sagrada e Explosão Estelar (até nível 8)</li><li>Poder, Botas Velozes, Coração Forte, Ímã e Regeneração (até nível 5)</li></ul></div>
-      <div class="box"><h3>Inimigos</h3><p>Morcegos, zumbis e brutamontes, mais fortes a cada minuto e com mais jogadores. O Rei da Noite aparece a cada 3 minutos. Sobreviver 15 minutos é vitória.</p></div>
+      <div class="box"><h3>Armas e melhorias</h3><ul><li>Raio, Lâminas, Aura e Explosão (até nível 8)</li><li>Poder, Botas, Coração, Ímã e Regenera (até nível 5)</li><li>Poção quando já tem tudo no máximo</li><li>XP dividido com o time todo</li></ul></div>
+      <div class="box"><h3>Inimigos</h3><p>Morcegos, zumbis e brutamontes, mais fortes a cada minuto e com mais jogadores. O Rei da Noite aparece a cada 3 minutos. Sobreviver 15 minutos é vitória: nos testes, os bots aguentam de 13 a 14,5 minutos.</p></div>
       <div class="box"><h3>Controles e som</h3><p>Analógico fixo embaixo, no centro (celular) ou WASD/setas (PC). Ataques automáticos. Música e efeitos com botão de mudo.</p></div>
     </div>
   </section>

@@ -1,7 +1,7 @@
 // Tela, controles e rede (PeerJS). O anfitrião roda a Sim; os outros só enviam comandos e desenham.
 'use strict';
 
-const VERSION = 'v3'; // mesmo número da entrada mais nova do diário (diario/diario.py)
+const VERSION = 'v4'; // mesmo número da entrada mais nova do diário (diario/diario.py)
 
 const ROOM_PREFIX = 'noitesemfim-mss-';
 const PEER_OPTS = {
@@ -13,7 +13,6 @@ const PEER_OPTS = {
   ] }
 };
 const SEND_MS = 66; // ~15 atualizações por segundo
-const ICONS = { bolt: '⚡', orbit: '🗡️', aura: '✨', nova: '💥', might: '💪', speed: '👟', maxhp: '❤️', magnet: '🧲', regen: '🌿', heal: '🧪' };
 
 const $ = s => document.querySelector(s);
 const cv = $('#cv');
@@ -294,16 +293,21 @@ function updateChoices(me) {
   const box = $('#choices');
   if (!ch) { box.classList.add('hidden'); return; }
   const cards = $('#cards'); cards.innerHTML = '';
+  $('#lvTitle').textContent = 'NÍVEL ' + me.lv + '!';
   ch.forEach((k, i) => {
     const u = UPG[k];
     const cur = (me.u && me.u[k]) || 0;
     const b = document.createElement('button');
-    b.className = 'card';
-    b.innerHTML = '<span class="ico"></span><b></b><small></small><em></em>';
-    b.querySelector('.ico').textContent = ICONS[k] || '★';
-    b.querySelector('b').textContent = u.n;
-    b.querySelector('small').textContent = u.d;
-    b.querySelector('em').textContent = k === 'heal' ? '' : (cur ? 'Nível ' + (cur + 1) : 'Novo!');
+    b.className = 'card k-' + u.k;
+    b.setAttribute('aria-label', u.n + ': ' + u.d);
+    b.title = u.d;
+    if (k !== 'heal' && !cur) { const n = document.createElement('span'); n.className = 'new'; n.textContent = 'NOVO'; b.append(n); }
+    const img = document.createElement('img'); img.className = 'ico'; img.alt = ''; img.src = Icons.url(k); b.append(img);
+    const nm = document.createElement('b'); nm.textContent = u.s; b.append(nm);
+    const pips = document.createElement('span'); pips.className = 'pips';
+    if (k === 'heal') { pips.textContent = '+40 ♥'; pips.classList.add('txt'); }
+    else for (let j = 1; j <= u.max; j++) { const p = document.createElement('i'); if (j <= cur) p.className = 'on'; else if (j === cur + 1) p.className = 'up'; pips.append(p); }
+    b.append(pips);
     b.addEventListener('click', () => choose(i));
     cards.append(b);
   });
@@ -573,6 +577,17 @@ function render(view, now, dt) {
     ctx.fillStyle = '#4cc9f0'; ctx.fillRect(10, top + 2, (W - 20) * Math.min(1, me.xp / me.nx), 8);
     ctx.font = '10px "Press Start 2P", monospace'; ctx.textAlign = 'left'; ctx.fillStyle = '#fff';
     ctx.fillText('NV ' + me.lv, 10, top + 32);
+    // itens que você já tem
+    let ix = 10;
+    ctx.font = '700 9px Rubik, sans-serif'; ctx.textAlign = 'center';
+    for (const k of Object.keys(UPG)) {
+      const lv = me.u && me.u[k]; if (!lv) continue;
+      ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(ix, top + 40, 22, 22);
+      Icons.draw(ctx, k, ix + 1, top + 41, 20);
+      ctx.fillStyle = '#fff'; ctx.fillText(lv, ix + 18, top + 61);
+      ix += 25;
+    }
+    ctx.textAlign = 'left';
   }
   ctx.textAlign = 'center'; ctx.font = '14px "Press Start 2P", monospace'; ctx.fillStyle = '#fff';
   ctx.fillText(fmtTime(tm), W / 2, top + 36);

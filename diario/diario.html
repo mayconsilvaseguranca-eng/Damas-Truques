@@ -85,7 +85,7 @@ td{padding:5px 6px;border-bottom:1px solid var(--line)}
 
 <div class="wrap">
   <header>
-    <span class="eyebrow">Diário do projeto · atualizado em 16/10/2026, 16:05</span>
+    <span class="eyebrow">Diário do projeto · atualizado em 17/10/2026, 01:14</span>
     <h1>Noite Sem Fim</h1>
     <p class="lead">Cada vez que o jogo muda, aparece aqui. A última atualização fica em destaque; as anteriores ficam fechadas logo abaixo, é só tocar para abrir.</p>
   </header>
@@ -98,8 +98,8 @@ td{padding:5px 6px;border-bottom:1px solid var(--line)}
   <section>
     <h2>Última atualização</h2>
     <div class="now">
-      <div class="top"><span class="badge">v3</span><div><b>Diário e versão na tela inicial</b><small>16/10 · 16:05</small></div></div>
-      <div class="vbody"><p class="ask"><b>Seu pedido</b>Fazer um diário para acompanhar as últimas atualizações, igual ao do Coringa 21, e mostrar a versão do jogo direto na tela inicial.</p><div class="grp"><span class="tag t-new">Novidades</span><ul><li>Este diário: cada mudança no jogo aparece aqui, com o seu pedido e o que mudou. A última atualização fica em destaque.</li><li>A tela inicial mostra a versão embaixo do subtítulo (sobrevivência online · v3), com o mesmo número deste diário. Assim dá para conferir se o celular já pegou a atualização.</li></ul></div></div>
+      <div class="top"><span class="badge">v4</span><div><b>Itens com desenho e jogo balanceado</b><small>17/10 · 01:14</small></div></div>
+      <div class="vbody"><p class="ask"><b>Seu pedido</b>Deixar as escolhas de item mais visuais, com imagens e poucas palavras, e testar para balancear o jogo.</p><div class="grp"><span class="tag t-new">Novidades</span><ul><li>Cor da borda da carta mostra o tipo: dourada para arma, azul para bônus, vermelha para a poção. Item que você ainda não tem ganha a etiqueta NOVO.</li><li>Os itens que você já tem aparecem no canto de cima, com o nível de cada um.</li><li>Simulador de balanceamento no projeto (tests/balanceamento.js), para conferir os números depois de cada mudança.</li></ul></div><div class="grp"><span class="tag t-chg">Mudanças</span><ul><li>As cartas de subir de nível agora mostram um desenho grande de cada item, o nome curto e quadradinhos com o nível (o que pisca é o que você vai ganhar). Saiu o texto explicativo; ele aparece só se você parar o mouse em cima.</li><li>Balanceamento testado com centenas de partidas simuladas por bots (sozinho, em 2 e em 4). Antes, sozinho morria com 2 a 4 minutos ainda no nível 2 a 4; agora os bots aguentam de 13 a 14,5 minutos e vencer os 15 exige jogar bem.</li><li>Sobe de nível bem mais rápido no começo, o Raio começa mais forte, a coleta de XP alcança mais longe e o primeiro chefe ficou mais fraco. Em compensação, os inimigos endurecem mais no fim da partida.</li><li>O XP agora vai para o time todo: quando alguém pega uma gema, todos ganham. Em grupo vêm mais inimigos, e eles ficam mais resistentes aos poucos.</li></ul></div><div class="grp"><span class="tag t-fix">Correções</span><ul><li>Com vários jogadores juntos, os empurrões das lâminas e explosões se somavam e formavam uma parede: nenhum inimigo encostava e o grupo nunca morria. Agora cada inimigo só pode ser empurrado a cada 0,4 segundo.</li></ul></div></div>
     </div>
   </section>
 
@@ -107,6 +107,9 @@ td{padding:5px 6px;border-bottom:1px solid var(--line)}
     <h2>Histórico</h2>
     <p class="sec-note">Da mais nova para a mais antiga. Toque numa versão para ver os detalhes.</p>
     <details class="ver" >
+  <summary><span class="vtag">v3</span><span class="vt"><b>Diário e versão na tela inicial</b><small>16/10 · 16:05</small></span><span class="chev">›</span></summary>
+  <div class="vbody"><p class="ask"><b>Seu pedido</b>Fazer um diário para acompanhar as últimas atualizações, igual ao do Coringa 21, e mostrar a versão do jogo direto na tela inicial.</p><div class="grp"><span class="tag t-new">Novidades</span><ul><li>Este diário: cada mudança no jogo aparece aqui, com o seu pedido e o que mudou. A última atualização fica em destaque.</li><li>A tela inicial mostra a versão embaixo do subtítulo (sobrevivência online · v3), com o mesmo número deste diário. Assim dá para conferir se o celular já pegou a atualização.</li></ul></div></div>
+</details><details class="ver" >
   <summary><span class="vtag">v2</span><span class="vt"><b>Analógico no centro, sons e música</b><small>16/10 · 15:58</small></span><span class="chev">›</span></summary>
   <div class="vbody"><p class="ask"><b>Seu pedido</b>Botar um analógico no centro da tela e adicionar efeitos sonoros e música de fundo.</p><div class="grp"><span class="tag t-new">Novidades</span><ul><li>Efeitos sonoros: tiro, inimigo derrotado, XP coletado, subir de nível, dano, explosão, amigo entrando na sala, cair, ser revivido, chefe chegando, vitória e derrota.</li><li>Música de fundo no estilo 8-bit, num clima sombrio. Quando o chefe aparece (ou depois de 7 minutos) ela acelera e ganha melodia.</li><li>Botão de som no canto da tela: som e música, só efeitos ou mudo. O jogo lembra a escolha.</li></ul></div><div class="grp"><span class="tag t-chg">Mudanças</span><ul><li>O analógico digital agora fica fixo embaixo, no centro da tela, e funciona na horizontal e na vertical. Fica visível o tempo todo no celular. Não ficou no meio exato da tela para não cobrir o personagem.</li><li>Os sons são gerados pelo próprio código, sem arquivos de áudio, então o jogo continua carregando rápido.</li></ul></div></div>
 </details><details class="ver" >
@@ -119,8 +122,8 @@ td{padding:5px 6px;border-bottom:1px solid var(--line)}
     <h2>Como o jogo está agora</h2>
     <div class="grid">
       <div class="box"><h3>Online</h3><p>Até 4 jogadores por sala, com código de 4 letras ou link de convite. Quem cria a sala roda o jogo no próprio aparelho. Também dá para jogar sozinho (pausa ao escolher melhorias).</p></div>
-      <div class="box"><h3>Armas e melhorias</h3><ul><li>Raio Mágico, Lâminas Orbitais, Aura Sagrada e Explosão Estelar (até nível 8)</li><li>Poder, Botas Velozes, Coração Forte, Ímã e Regeneração (até nível 5)</li></ul></div>
-      <div class="box"><h3>Inimigos</h3><p>Morcegos, zumbis e brutamontes, mais fortes a cada minuto e com mais jogadores. O Rei da Noite aparece a cada 3 minutos. Sobreviver 15 minutos é vitória.</p></div>
+      <div class="box"><h3>Armas e melhorias</h3><ul><li>Raio, Lâminas, Aura e Explosão (até nível 8)</li><li>Poder, Botas, Coração, Ímã e Regenera (até nível 5)</li><li>Poção quando já tem tudo no máximo</li><li>XP dividido com o time todo</li></ul></div>
+      <div class="box"><h3>Inimigos</h3><p>Morcegos, zumbis e brutamontes, mais fortes a cada minuto e com mais jogadores. O Rei da Noite aparece a cada 3 minutos. Sobreviver 15 minutos é vitória: nos testes, os bots aguentam de 13 a 14,5 minutos.</p></div>
       <div class="box"><h3>Controles e som</h3><p>Analógico fixo embaixo, no centro (celular) ou WASD/setas (PC). Ataques automáticos. Música e efeitos com botão de mudo.</p></div>
     </div>
   </section>
