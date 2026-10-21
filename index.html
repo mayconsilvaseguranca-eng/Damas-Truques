@@ -2311,11 +2311,13 @@ function tutScene(T){
   const wait=(ms,f)=>setTimeout(()=>{if(ui.tut===T)f();},reduce?Math.min(ms,150):ms);
   S=tutState(sc);NAMES=S.names;T.cap=sc.cap;ui.piece=null;lastOrient=null;render();
   let k=0;
-  const step=()=>{const mv=sc.moves[k];if(!mv){wait(2400,()=>{T.scene++;if(T.scene<L.scenes.length)tutScene(T);else{T.res='ok';T.show=true;renderOverlay();}});return;}
+  const step=()=>{const mv=sc.moves[k];if(!mv){wait(1700,()=>{T.scene++;if(T.scene<L.scenes.length)tutScene(T);else tutAdvance(T);});return;}
     ui.piece=mv[0];render();SND.play('select');
-    wait(1400,()=>{ui.piece=null;const e=dispatch(S,{type:'move',from:mv[0],to:mv[1]});SND.play(e?'error':'move');const evs=S.fx.slice();render();if(evs.length)enqueueFx(evs);k++;wait(k<sc.moves.length?1100:600,step);});};
-  wait(1500,step);
+    wait(1000,()=>{ui.piece=null;const e=dispatch(S,{type:'move',from:mv[0],to:mv[1]});SND.play(e?'error':'move');const evs=S.fx.slice();render();if(evs.length)enqueueFx(evs);k++;wait(k<sc.moves.length?900:600,step);});};
+  wait(900,step);
 }
+/* lição concluída: segue direto para a próxima */
+function tutAdvance(T){if(ui.tut!==T)return;const n=T.i+1;toast(n>=TUT.length?'Tutorial concluído!':'Muito bem!');if(n>=TUT.length)tutFinish();else tutStart(n);}
 function tutAfter(a,e,by){
   const T=ui.tut;if(!T||T.done||e)return;const L=TUT[T.i];
   if(a.type==='move'&&by===0)T.moves++;
@@ -2324,7 +2326,7 @@ function tutAfter(a,e,by){
   const r=L.check(S,T);
   if(r){T.done=true;T.res=r;clearTimeout(tickT);clearTimeout(autoT);autoT=null;
     if(r==='ok')try{SND.play('win');}catch(err){}
-    const show=()=>{if(ui.tut!==T)return;if(fxBusy||fxQ.length){setTimeout(show,250);return;}T.show=true;renderOverlay();};setTimeout(show,450);}
+    const show=()=>{if(ui.tut!==T)return;if(fxBusy||fxQ.length){setTimeout(show,250);return;}if(r==='ok'){tutAdvance(T);return;}T.show=true;renderOverlay();};setTimeout(show,r==='ok'?1100:450);}
 }
 function tutQuit(){ui.tut=null;S=null;NAMES=null;ui.screen='menu';render();window.scrollTo(0,0);}
 function tutFinish(){ui.tut=null;S=null;NAMES=null;lsSet('damas-tutorial','1');ui.screen='tutclasses';render();window.scrollTo(0,0);}
