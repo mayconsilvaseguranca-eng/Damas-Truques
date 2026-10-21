@@ -756,6 +756,8 @@ svg.cc-char{width:72px;height:84px}
 .cc-blurb{font-size:.74rem;color:var(--muted);line-height:1.25}
 @media (max-width:440px){.classgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-blurb{display:none}}
 .tutdeckbtns{position:sticky;bottom:0;padding-top:8px;background:linear-gradient(transparent,rgba(12,9,20,.95) 30%)}
+.coach-sub{font-family:var(--f-body);font-size:.7rem;color:var(--muted);letter-spacing:.04em}
+.coach-sub{display:block;margin-top:2px}
 
 /* tema: brinquedo.css */
 /* ===== Tema Brinquedo: amarelo, contornos grossos, cantos redondos ===== */
@@ -2254,26 +2256,15 @@ window.addEventListener('pagehide',()=>{if(NET.role==='guest')netSend({t:'bye',s
    assunto. O jogador faz a jogada de verdade; o tutorial confere.
    ===================================================================== */
 const TUT=[
- {t:'Andar',txt:'Toque numa peça <b>sua</b> que está brilhando e depois numa casa marcada. A peça anda <b>1 casa na diagonal, para frente</b>.',
-  ok:'A peça andou. As peças só ficam nas casas escuras e, sem cartas, andam sempre para frente.',
-  mine:[[5,2],[5,4],[6,5]],foe:[[0,7],[1,2]],
-  check:(s,T)=>T.moves>=1?'ok':null},
- {t:'Capturar',txt:'Tem uma peça inimiga encostada na sua. <b>Pule por cima dela</b> para capturar. Repare: quando dá para capturar, só as peças que capturam brilham. A captura é <b>obrigatória</b>.',
-  ok:'Capturou! A peça comum captura para frente e para trás, sempre pulando para a casa vazia logo depois.',
-  mine:[[5,2],[6,5]],foe:[[4,3],[0,7]],
-  check:(s,T)=>count(s,1)<T.foe0?'ok':null},
- {t:'Captura em sequência',txt:'Depois de capturar, se a mesma peça puder capturar de novo, ela <b>continua pulando</b>. Capture as <b>duas</b> peças inimigas numa jogada só.',
-  ok:'Duas de uma vez! A sequência continua enquanto houver peça para capturar.',
-  mine:[[6,1]],foe:[[5,2],[3,4],[0,7]],
-  check:(s,T)=>T.foe0-count(s,1)>=2?'ok':null},
- {t:'Virar dama',txt:'Leve a sua peça até a <b>última fileira</b>, do outro lado do tabuleiro. Ela vira <b>dama</b>.',
-  ok:'Virou dama! A coroa aparece na peça.',
-  mine:[[1,2]],foe:[[5,6]],
-  check:s=>{let k=false;forEachPiece(s,p=>{if(p.owner===0&&p.king)k=true;});return k?'ok':null;}},
- {t:'A dama',txt:'A <b>dama</b> anda quantas casas quiser na diagonal e captura <b>de longe</b>. Use a sua dama para capturar a peça inimiga do outro lado.',
-  ok:'A dama é a peça mais forte do jogo. Proteja a sua e cuidado com a do oponente.',
-  mine:[[7,0,1]],foe:[[3,4],[0,1]],
-  check:(s,T)=>count(s,1)<T.foe0?'ok':null},
+ {t:'Damas, como você já conhece',demo:true,
+  ok:'As de sempre. Agora vem a parte nova: as cartas, que mudam tudo.',
+  scenes:[
+   {cap:'A peça anda <b>1 casa na diagonal, para frente</b>, sempre nas casas escuras.',mine:[[5,2],[5,4],[6,5]],foe:[[0,7],[1,2]],moves:[[[5,2],[4,3]]]},
+   {cap:'Para <b>capturar</b>, a peça pula por cima da inimiga. A captura é <b>obrigatória</b>.',mine:[[5,2],[6,5]],foe:[[4,3],[0,7]],moves:[[[5,2],[3,4]]]},
+   {cap:'Se depois de capturar ainda der para capturar, a <b>mesma peça continua</b>.',mine:[[6,1]],foe:[[5,2],[3,4],[0,7]],moves:[[[6,1],[4,3]],[[4,3],[2,5]]]},
+   {cap:'Chegando do outro lado do tabuleiro, a peça vira <b>dama</b>.',mine:[[1,2]],foe:[[5,6]],moves:[[[1,2],[0,3]]]},
+   {cap:'A <b>dama</b> anda quantas casas quiser na diagonal e <b>captura de longe</b>.',mine:[[7,0,1]],foe:[[3,4],[0,1]],moves:[[[7,0],[2,5]]]},
+  ]},
  {t:'Carta de ação',txt:'Agora as cartas! Em cada turno você pode usar <b>1 carta, antes de mover</b>. <b>Arraste a carta Fúria da sua mão para cima</b> para usar. Depois capture: a Fúria dá <b>mais uma jogada</b>.',
   ok:'Fúria usada, captura feita e jogada extra. Cartas de ação (claras, com raio) resolvem na hora.',
   bad:'Você moveu antes de usar a carta. A carta só pode ser usada antes de mover. Tente de novo: primeiro arraste a Fúria para cima.',
@@ -2311,7 +2302,19 @@ function tutStart(i){
   ui.tut={i,moves:0,foe0:count(S,1),done:false,res:null,armed:false,oppDone:false};
   ui.screen='game';ui.tab='jogar';ui.orient=0;lastOrient=null;ui.pending=[];
   ui.sel=ui.selTrap=ui.tgt=ui.confirm=ui.askMove=ui.piece=null;ui.noAsk=false;
+  if(TUT[i].demo){ui.tut.done=true;ui.tut.scene=0;tutScene(ui.tut);}
   render();window.scrollTo(0,0);
+}
+/* demonstração automática das regras de damas, numa velocidade tranquila */
+function tutScene(T){
+  const L=TUT[T.i],sc=L.scenes[T.scene];if(!sc)return;
+  const wait=(ms,f)=>setTimeout(()=>{if(ui.tut===T)f();},reduce?Math.min(ms,150):ms);
+  S=tutState(sc);NAMES=S.names;T.cap=sc.cap;ui.piece=null;lastOrient=null;render();
+  let k=0;
+  const step=()=>{const mv=sc.moves[k];if(!mv){wait(2400,()=>{T.scene++;if(T.scene<L.scenes.length)tutScene(T);else{T.res='ok';T.show=true;renderOverlay();}});return;}
+    ui.piece=mv[0];render();SND.play('select');
+    wait(1400,()=>{ui.piece=null;const e=dispatch(S,{type:'move',from:mv[0],to:mv[1]});SND.play(e?'error':'move');const evs=S.fx.slice();render();if(evs.length)enqueueFx(evs);k++;wait(k<sc.moves.length?1100:600,step);});};
+  wait(1500,step);
 }
 function tutAfter(a,e,by){
   const T=ui.tut;if(!T||T.done||e)return;const L=TUT[T.i];
@@ -2331,13 +2334,13 @@ function coachHTML(){
     <div class="coach-top"><span class="coach-step">Lição ${T.i+1} de ${TUT.length}</span>
       <div class="coach-dots" aria-hidden="true">${TUT.map((_,k)=>`<i class="${k<T.i?'done':k===T.i?'now':''}"></i>`).join('')}</div>
       <button class="btn ghost small" id="tutskip">Pular</button><button class="btn ghost small" id="tutquit">Sair</button></div>
-    <div class="coach-body">${charSVG('relojoeiro','coachchar')}<div><h3>${L.t}</h3><p>${L.txt}</p></div></div></div>`;
+    <div class="coach-body">${charSVG('relojoeiro','coachchar')}<div><h3>${L.t}${L.demo?` <small class="coach-sub">${(T.scene||0)+1} de ${L.scenes.length} · só assista</small>`:''}</h3><p>${L.demo?T.cap||'':L.txt}</p></div></div></div>`;
 }
 function tutOverlayHTML(){
   const T=ui.tut;if(!T||!T.show)return '';const L=TUT[T.i],last=T.i===TUT.length-1;
   if(T.res==='ok')return `<div class="overlay"><div class="ov-in tutpop"><span class="bigchar">${charSVG('ataque')}</span><p class="eyebrow">Lição ${T.i+1} · ${L.t}</p>
-    <h2>Muito bem!</h2><p class="hint">${L.ok}</p>
-    <div class="ov-row"><button class="btn primary" id="tutnext">${last?'Conhecer as 10 classes':'Próxima lição'}</button><button class="btn ghost" id="tutretry">Repetir</button></div></div></div>`;
+    <h2>${L.demo?'Essas são as regras de damas':'Muito bem!'}</h2><p class="hint">${L.ok}</p>
+    <div class="ov-row"><button class="btn primary" id="tutnext">${last?'Conhecer as 10 classes':L.demo?'Aprender as cartas':'Próxima lição'}</button><button class="btn ghost" id="tutretry">${L.demo?'Ver de novo':'Repetir'}</button></div></div></div>`;
   return `<div class="overlay"><div class="ov-in tutpop"><p class="eyebrow">Lição ${T.i+1} · ${L.t}</p><h2>Quase!</h2><p class="hint">${L.bad||'Tente de novo.'}</p>
     <div class="ov-row"><button class="btn primary" id="tutretry">Tentar de novo</button><button class="btn ghost" id="tutnext">Pular</button></div></div></div>`;
 }
@@ -3311,7 +3314,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.opp!==undefined&&ui.tgt){act({type:'play',uid:ui.tgt,opp:+t.dataset.opp});return;}
   if(t.dataset.uid){SND.play('select');ui.sel=ui.sel===t.dataset.uid?null:t.dataset.uid;ui.selTrap=null;ui.piece=null;render();return;}
   if(t.dataset.trap){ui.selTrap=ui.selTrap===t.dataset.trap?null:t.dataset.trap;ui.sel=null;render();return;}
-  if(t.dataset.r!==undefined&&S&&myTurn()){
+  if(t.dataset.r!==undefined&&S&&myTurn()&&!(ui.tut&&TUT[ui.tut.i].demo)){
     const pos=[+t.dataset.r,+t.dataset.c];
     if(ui.tgt){const raw=CARD[S.cards[ui.tgt]],c=raw.kind==='armadilha'?raw:effCard(S,ui.tgt);
       if(ui.confirm&&!c.dests)ui.confirm=null;
