@@ -731,6 +731,32 @@ svg.bchar{width:78px;height:90px;margin:0 auto 6px}
 .setup .seat-h small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .setup .seat-h .seg{flex:none}
 
+/* ---- tutorial jogável ---- */
+.coach{border:2px solid var(--hi);border-radius:16px;background:linear-gradient(180deg,var(--surface2),var(--surface));padding:10px 12px;display:flex;flex-direction:column;gap:8px;box-shadow:0 0 18px color-mix(in srgb,var(--hi) 22%,transparent)}
+.coach-top{display:flex;align-items:center;gap:8px}
+.coach-step{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--hi);white-space:nowrap}
+.coach-dots{display:flex;gap:4px;flex:1;min-width:0}
+.coach-dots i{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.coach-dots i.done{background:color-mix(in srgb,var(--hi) 55%,transparent)}
+.coach-dots i.now{background:var(--hi);box-shadow:0 0 0 3px color-mix(in srgb,var(--hi) 30%,transparent)}
+.btn.small{padding:6px 10px;font-size:.7rem;flex:none}
+.coach-body{display:flex;gap:10px;align-items:flex-start}
+svg.coachchar{width:48px;height:56px}
+.coach-body h3{margin:0 0 2px;font-family:var(--f-display);font-weight:400;font-size:1.05rem;color:var(--hi)}
+.coach-body p{margin:0;font-size:.9rem;line-height:1.35}
+.coach-body b{color:var(--hi)}
+.tutpop .bigchar{width:90px;height:105px}
+.tutfromrules{width:100%;margin-bottom:12px}
+.classgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.classcard{display:flex;flex-direction:column;align-items:center;text-align:center;gap:3px;padding:10px 8px 12px;border-radius:16px;background:var(--card-lo);border:2px solid var(--line);color:var(--fg);font:inherit;cursor:pointer}
+.classcard[aria-pressed="true"]{border-color:var(--dk);background:color-mix(in srgb,var(--dk) 16%,var(--card-lo));box-shadow:0 0 16px color-mix(in srgb,var(--dk) 30%,transparent)}
+svg.cc-char{width:72px;height:84px}
+.classcard b{font-size:1rem}
+.classcard small{color:var(--dk);font-weight:700;font-size:.72rem}
+.cc-blurb{font-size:.74rem;color:var(--muted);line-height:1.25}
+@media (max-width:440px){.classgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-blurb{display:none}}
+.tutdeckbtns{position:sticky;bottom:0;padding-top:8px;background:linear-gradient(transparent,rgba(12,9,20,.95) 30%)}
+
 /* tema: brinquedo.css */
 /* ===== Tema Brinquedo: amarelo, contornos grossos, cantos redondos ===== */
 html[data-tema="brinquedo"]{
@@ -2224,6 +2250,114 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&NET.cli)N
 window.addEventListener('pagehide',()=>{if(NET.role==='guest')netSend({t:'bye',soft:true});});
 
 /* =====================================================================
+   TUTORIAL JOGÁVEL — lições curtas num tabuleiro montado para cada
+   assunto. O jogador faz a jogada de verdade; o tutorial confere.
+   ===================================================================== */
+const TUT=[
+ {t:'Andar',txt:'Toque numa peça <b>sua</b> que está brilhando e depois numa casa marcada. A peça anda <b>1 casa na diagonal, para frente</b>.',
+  ok:'A peça andou. As peças só ficam nas casas escuras e, sem cartas, andam sempre para frente.',
+  mine:[[5,2],[5,4],[6,5]],foe:[[0,7],[1,2]],
+  check:(s,T)=>T.moves>=1?'ok':null},
+ {t:'Capturar',txt:'Tem uma peça inimiga encostada na sua. <b>Pule por cima dela</b> para capturar. Repare: quando dá para capturar, só as peças que capturam brilham. A captura é <b>obrigatória</b>.',
+  ok:'Capturou! A peça comum captura para frente e para trás, sempre pulando para a casa vazia logo depois.',
+  mine:[[5,2],[6,5]],foe:[[4,3],[0,7]],
+  check:(s,T)=>count(s,1)<T.foe0?'ok':null},
+ {t:'Captura em sequência',txt:'Depois de capturar, se a mesma peça puder capturar de novo, ela <b>continua pulando</b>. Capture as <b>duas</b> peças inimigas numa jogada só.',
+  ok:'Duas de uma vez! A sequência continua enquanto houver peça para capturar.',
+  mine:[[6,1]],foe:[[5,2],[3,4],[0,7]],
+  check:(s,T)=>T.foe0-count(s,1)>=2?'ok':null},
+ {t:'Virar dama',txt:'Leve a sua peça até a <b>última fileira</b>, do outro lado do tabuleiro. Ela vira <b>dama</b>.',
+  ok:'Virou dama! A coroa aparece na peça.',
+  mine:[[1,2]],foe:[[5,6]],
+  check:s=>{let k=false;forEachPiece(s,p=>{if(p.owner===0&&p.king)k=true;});return k?'ok':null;}},
+ {t:'A dama',txt:'A <b>dama</b> anda quantas casas quiser na diagonal e captura <b>de longe</b>. Use a sua dama para capturar a peça inimiga do outro lado.',
+  ok:'A dama é a peça mais forte do jogo. Proteja a sua e cuidado com a do oponente.',
+  mine:[[7,0,1]],foe:[[3,4],[0,1]],
+  check:(s,T)=>count(s,1)<T.foe0?'ok':null},
+ {t:'Carta de ação',txt:'Agora as cartas! Em cada turno você pode usar <b>1 carta, antes de mover</b>. <b>Arraste a carta Fúria da sua mão para cima</b> para usar. Depois capture: a Fúria dá <b>mais uma jogada</b>.',
+  ok:'Fúria usada, captura feita e jogada extra. Cartas de ação (claras, com raio) resolvem na hora.',
+  bad:'Você moveu antes de usar a carta. A carta só pode ser usada antes de mover. Tente de novo: primeiro arraste a Fúria para cima.',
+  mine:[[5,2],[6,7]],foe:[[4,3],[0,1]],hand:['furia'],
+  check:(s,T)=>{if(T.moves>=1&&!s.cardPlayed)return 'bad';return s.cardPlayed&&T.moves>=2?'ok':null;}},
+ {t:'Carta com alvo',txt:'Algumas cartas pedem um alvo. Arraste <b>Promoção Antecipada</b> para cima, toque na <b>sua peça marcada</b> e depois em <b>Confirmar</b>. O tabuleiro mostra a prévia antes.',
+  ok:'A peça virou dama sem precisar chegar ao fim. Depois de usar a carta, você ainda move uma peça normalmente.',
+  mine:[[3,2],[6,5]],foe:[[0,5],[0,1]],hand:['promocao'],
+  check:s=>{let k=false;forEachPiece(s,p=>{if(p.owner===0&&p.king)k=true;});return k&&s.cardPlayed?'ok':null;}},
+ {t:'Armadilha',txt:'Cartas de <b>armadilha</b> (escuras, com moldura listrada) ficam viradas para baixo e disparam sozinhas. Arraste <b>Contra-ataque</b> para cima para armar, depois mova a peça que brilha e veja o que acontece.',
+  ok:'O oponente capturou a sua peça e o Contra-ataque destruiu a peça dele. Você pode ter até 2 armadilhas armadas, e os oponentes não sabem quais são.',
+  bad:'O oponente não caiu na armadilha desta vez. Tente de novo: arme o Contra-ataque antes de mover.',
+  mine:[[4,3],[3,2]],foe:[[3,4],[2,5]],hand:['contra'],
+  opp:s=>{const m=legalMoves(s).find(m=>m.from[0]===3&&m.from[1]===4&&m.to[0]===5&&m.to[1]===2)||legalMoves(s)[0];return m?{type:'move',from:m.from,to:m.to}:{type:'skip'};},
+  check:(s,T)=>{if(!T.oppDone)return null;return s.players[0].traps.length===0&&T.armed?'ok':'bad';}},
+ {t:'Descartar',txt:'Carta que não serve agora? Uma vez por turno você pode <b>descartar</b>: arraste a carta até a <b>lixeira</b> que aparece na tela.',
+  ok:'Descartada. A mão tem no máximo 5 cartas e você compra 1 por turno. Quando o monte acaba, o descarte é embaralhado de novo.',
+  mine:[[5,2],[5,4],[6,5]],foe:[[0,7],[1,2]],hand:['furia','promocao','contra'],
+  check:s=>s.discarded?'ok':null},
+];
+function tutState(L){
+  const s=newGame({decks:['ataque','defesa'],ctrl:['human','remote'],seed:11});
+  for(let r=0;r<s.N;r++)for(let c=0;c<s.N;c++)s.board[r][c]=null;
+  (L.mine||[]).forEach(([r,c,k])=>{const p=newPiece(s,0);p.king=!!k;s.board[r][c]=p;});
+  (L.foe||[]).forEach(([r,c,k])=>{const p=newPiece(s,1);p.king=!!k;s.board[r][c]=p;});
+  s.players.forEach(P=>{P.hand=[];P.pile=[];P.discard=[];P.traps=[];});
+  (L.hand||[]).forEach((id,k)=>{const u='t'+k;s.cards[u]=id;s.owner[u]=0;s.players[0].hand.push(u);});
+  s.phase='play';s.current=0;s.turn=1;s.log=[];s.fx=[];s.names=['Você','Treinador'];
+  return s;
+}
+function tutStart(i){
+  i=Math.max(0,Math.min(TUT.length-1,i|0));
+  clearTimeout(tickT);clearTimeout(autoT);autoT=null;autoKey=null;
+  S=tutState(TUT[i]);NAMES=S.names;
+  ui.tut={i,moves:0,foe0:count(S,1),done:false,res:null,armed:false,oppDone:false};
+  ui.screen='game';ui.tab='jogar';ui.orient=0;lastOrient=null;ui.pending=[];
+  ui.sel=ui.selTrap=ui.tgt=ui.confirm=ui.askMove=ui.piece=null;ui.noAsk=false;
+  render();window.scrollTo(0,0);
+}
+function tutAfter(a,e,by){
+  const T=ui.tut;if(!T||T.done||e)return;const L=TUT[T.i];
+  if(a.type==='move'&&by===0)T.moves++;
+  if(a.type==='play'&&by===0&&CARD[S.cards[a.uid]]&&CARD[S.cards[a.uid]].kind==='armadilha')T.armed=true;
+  if(L.opp&&a.type==='ready'&&S.current===1){setTimeout(()=>{if(ui.tut===T&&S.current===1&&S.phase==='play'){act(L.opp(S));T.oppDone=true;tutAfter({type:'check'},null,1);}},700);return;}
+  const r=L.check(S,T);
+  if(r){T.done=true;T.res=r;clearTimeout(tickT);clearTimeout(autoT);autoT=null;
+    if(r==='ok')try{SND.play('win');}catch(err){}
+    const show=()=>{if(ui.tut!==T)return;if(fxBusy||fxQ.length){setTimeout(show,250);return;}T.show=true;renderOverlay();};setTimeout(show,450);}
+}
+function tutQuit(){ui.tut=null;S=null;NAMES=null;ui.screen='menu';render();window.scrollTo(0,0);}
+function tutFinish(){ui.tut=null;S=null;NAMES=null;lsSet('damas-tutorial','1');ui.screen='tutclasses';render();window.scrollTo(0,0);}
+function coachHTML(){
+  const T=ui.tut,L=TUT[T.i];
+  return `<div class="coach">
+    <div class="coach-top"><span class="coach-step">Lição ${T.i+1} de ${TUT.length}</span>
+      <div class="coach-dots" aria-hidden="true">${TUT.map((_,k)=>`<i class="${k<T.i?'done':k===T.i?'now':''}"></i>`).join('')}</div>
+      <button class="btn ghost small" id="tutskip">Pular</button><button class="btn ghost small" id="tutquit">Sair</button></div>
+    <div class="coach-body">${charSVG('relojoeiro','coachchar')}<div><h3>${L.t}</h3><p>${L.txt}</p></div></div></div>`;
+}
+function tutOverlayHTML(){
+  const T=ui.tut;if(!T||!T.show)return '';const L=TUT[T.i],last=T.i===TUT.length-1;
+  if(T.res==='ok')return `<div class="overlay"><div class="ov-in tutpop"><span class="bigchar">${charSVG('ataque')}</span><p class="eyebrow">Lição ${T.i+1} · ${L.t}</p>
+    <h2>Muito bem!</h2><p class="hint">${L.ok}</p>
+    <div class="ov-row"><button class="btn primary" id="tutnext">${last?'Conhecer as 10 classes':'Próxima lição'}</button><button class="btn ghost" id="tutretry">Repetir</button></div></div></div>`;
+  return `<div class="overlay"><div class="ov-in tutpop"><p class="eyebrow">Lição ${T.i+1} · ${L.t}</p><h2>Quase!</h2><p class="hint">${L.bad||'Tente de novo.'}</p>
+    <div class="ov-row"><button class="btn primary" id="tutretry">Tentar de novo</button><button class="btn ghost" id="tutnext">Pular</button></div></div></div>`;
+}
+function renderTutClasses(){
+  return `<section class="menu tutclasses">
+    <div class="sub-h"><button class="btn ghost back" id="tomenu">← Menu</button><h2>As 10 classes</h2></div>
+    <p class="lead">Cada jogador escolhe uma classe antes da partida. A classe é o seu baralho de 12 cartas, cada uma com um jeito de jogar. Toque numa classe para ver as cartas dela.</p>
+    <div class="classgrid">${Object.keys(DECKS).map(k=>`<button class="classcard d-${k}" data-tutpick="${k}">
+      ${charSVG(k,'cc-char')}<b>${charName(k)}</b><small>${charLine(k)}</small><span class="cc-blurb">${DECKS[k].blurb}</span></button>`).join('')}</div>
+  </section>`;
+}
+function tutDeckHTML(){
+  const k=ui.tutDeck,d=DECKS[k];if(!d)return '';const cs=CARDS.filter(c=>c.deck===k);
+  return `<div class="overlay logmodal deckmodal" id="tutdeckbg"><div class="ov-in d-${k}"><p class="eyebrow">Classe</p>
+    <span class="bigchar">${charSVG(k)}</span><h2 class="dv-title">${charName(k)}</h2><p class="dv-char">${icon(k)}${charLine(k)}</p><p class="hint">${d.blurb}</p>
+    <div class="dv-grid">${cs.map(c=>cardHTML(c,{full:true})).join('')}</div>
+    <div class="ov-row tutdeckbtns"><button class="btn primary" id="tutplay">Jogar com ${charName(k)} contra um bot</button><button class="btn ghost" id="closetutdeck">Voltar</button></div></div></div>`;
+}
+
+/* =====================================================================
    SOM: tudo sintetizado na hora com Web Audio (sem arquivos).
    Música de fundo gerada por tema + efeitos com o "timbre" do tema.
    ===================================================================== */
@@ -2463,7 +2597,7 @@ stage.addEventListener('click',()=>fxSkip&&fxSkip());
 let S=null;
 const inGame=()=>!!S&&ui.tab==='jogar'&&ui.screen==='game';
 /* partida salva neste aparelho, para continuar depois */
-function saveGame(){if(NET.on)return;try{if(S&&S.phase!=='over')localStorage.setItem('damas-partida',JSON.stringify({...S,log:S.log.slice(-60),fx:[]}));else localStorage.removeItem('damas-partida');}catch(e){}}
+function saveGame(){if(NET.on||ui.tut)return;try{if(S&&S.phase!=='over')localStorage.setItem('damas-partida',JSON.stringify({...S,log:S.log.slice(-60),fx:[]}));else localStorage.removeItem('damas-partida');}catch(e){}}
 function loadSaved(){try{const t=localStorage.getItem('damas-partida');if(!t)return null;const g=JSON.parse(t);return g&&g.v===4&&g.phase!=='over'?g:null;}catch(e){return null;}}
 const SEATNAME=['Marfim','Carmim','Cobalto','Jade'];
 const SEATPOS={2:['embaixo','em cima'],3:['embaixo','à esquerda','à direita'],4:['embaixo','à esquerda','em cima','à direita']};
@@ -2546,7 +2680,7 @@ function toast(msg){const t=$('toast');t.textContent=msg;t.hidden=false;clearTim
 
 const humans=()=>S?S.players.map((P,i)=>i).filter(i=>S.players[i].ctrl==='human'):[];
 const isBot=i=>S.players[i].ctrl==='bot';
-function viewer(){if(!S)return null;if(NET.on)return NET.seat;if(!isBot(S.current))return S.current;const h=humans().filter(i=>!S.players[i].out);return h.length===1?h[0]:(humans().length===1?humans()[0]:null);}
+function viewer(){if(!S)return null;if(ui.tut)return 0;if(NET.on)return NET.seat;if(!isBot(S.current))return S.current;const h=humans().filter(i=>!S.players[i].out);return h.length===1?h[0]:(humans().length===1?humans()[0]:null);}
 const needPass=()=>!NET.on&&S&&S.phase==='pass'&&!isBot(S.current)&&humans().length>1;
 const myTurn=()=>S&&viewer()===S.current&&!isBot(S.current);
 const label=i=>J(i)+(isBot(i)?' (bot)':'');
@@ -2566,13 +2700,15 @@ function act(a,from){
   if(NET.role==='host'&&!e)netSync(evs,a,by);
   render();
   saveGame();
-  if(S.phase==='over'&&!e){setTimeout(()=>FX.confetti(),300);const v=viewer();SND.play(S.winner!==null&&(v===null||S.winner===v||humans().length>1)?'win':'lose');}
+  if(ui.tut)tutAfter(a,e,by);
+  if(S.phase==='over'&&!e&&!ui.tut){setTimeout(()=>FX.confetti(),300);const v=viewer();SND.play(S.winner!==null&&(v===null||S.winner===v||humans().length>1)?'win':'lose');}
   if(evs.length)requestAnimationFrame(()=>setTimeout(()=>enqueueFx(evs),a.type==='move'?220:0));
   else tick();
 }
 let tickT=null;
 let autoT=null,autoKey=null;
 function autoTurn(){
+  if(ui.tut&&ui.tut.done)return;
   if(!inGame()||S.phase==='over'||ui.quit||isBot(S.current)||!myTurn())return;
   const P=S.players[S.current];
   if(S.phase==='play'&&!S.moved&&!legalMoves(S).length&&!P.hand.some(u=>!cardBlock(S,u))&&!S.cardPlayed){
@@ -2583,7 +2719,7 @@ function autoTurn(){
   autoT=setTimeout(()=>{autoT=null;if(S&&S.phase==='ended'&&myTurn()&&!fxBusy&&!fxQ.length)act({type:'endTurn'});else if(S&&S.phase==='ended'){autoKey=null;tick();}},250);
 }
 function tick(){
-  clearTimeout(tickT);autoTurn();
+  clearTimeout(tickT);if(ui.tut&&ui.tut.done)return;autoTurn();
   if(NET.role==='guest')return;
   if(!inGame()||S.phase==='over'||(ui.quit&&!NET.on))return;
   if(!isBot(S.current)){if(S.phase==='pass'&&humans().length===1)tickT=setTimeout(()=>{if(S&&S.phase==='pass'&&!isBot(S.current))act({type:'ready'});},150);return;}
@@ -2701,7 +2837,7 @@ function render(){
   const back=`<div class="sub-h"><button class="btn ghost back" id="goback">← ${S&&ui.screen==='game'&&S.phase!=='over'?'Voltar à partida':'Menu'}</button><h2>${ui.tab==='cartas'?'Cartas':'Regras'}</h2></div>`;
   if(ui.tab==='cartas')m.innerHTML=back+renderCards();
   else if(ui.tab==='regras')m.innerHTML=back+renderRules();
-  else m.innerHTML=inGame()?renderGame():ui.screen==='offline'?renderSetup():ui.screen==='online'?renderOnline():ui.screen==='lobby'?renderLobby():renderMenu();
+  else m.innerHTML=inGame()?renderGame():ui.screen==='offline'?renderSetup():ui.screen==='online'?renderOnline():ui.screen==='lobby'?renderLobby():ui.screen==='tutclasses'?renderTutClasses():renderMenu();
   if(inGame()&&prevCount&&ui.orient===lastOrient&&!reduce){
     document.querySelectorAll('.pc[data-id]').forEach(el=>{const p=prev[el.dataset.id],n=el.getBoundingClientRect();
       if(p){const dx=p.left-n.left,dy=p.top-n.top;if(Math.abs(dx)+Math.abs(dy)>1)el.animate([{transform:`translate(${dx}px,${dy}px) scale(1.12)`,zIndex:5},{transform:'none'}],{duration:280,easing:'cubic-bezier(.3,.8,.3,1)'});}
@@ -2738,7 +2874,7 @@ function startGame(seats,omni){
 function renderMenu(){
   const saved=S&&S.phase!=='over'?S:loadSaved();
   const desc=g=>`${g.np} jogadores · turno ${g.turn} · ${g.players.map(P=>DECKS[P.deck].name).join(' x ')}`;
-  const ICO={play:'<path d="M7 4l13 8-13 8z"/>',bolt:'<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><circle cx="17" cy="9" r="2.6"/><path d="M16.5 14.6c2.6.2 4.4 1.9 5 4.9"/>',globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.8 3.8 5.8 3.8 9S14.6 18.2 12 21M12 3C9.4 5.8 8.2 8.8 8.2 12s1.2 6.2 3.8 9"/>'};
+  const ICO={play:'<path d="M7 4l13 8-13 8z"/>',bolt:'<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><circle cx="17" cy="9" r="2.6"/><path d="M16.5 14.6c2.6.2 4.4 1.9 5 4.9"/>',book:'<path d="M4 5.5C4 4.7 4.7 4 5.5 4H11v16H5.5C4.7 20 4 19.3 4 18.5z"/><path d="M20 5.5c0-.8-.7-1.5-1.5-1.5H13v16h5.5c.8 0 1.5-.7 1.5-1.5z"/>',globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.8 3.8 5.8 3.8 9S14.6 18.2 12 21M12 3C9.4 5.8 8.2 8.8 8.2 12s1.2 6.2 3.8 9"/>'};
   const ic=k=>`<svg class="mi-ico" viewBox="0 0 24 24" aria-hidden="true">${ICO[k]}</svg>`;
   const dots=Object.keys(DECKS).map(d=>charSVG(d,'mchar')).join('');
   return `<section class="menu">
@@ -2752,6 +2888,7 @@ function renderMenu(){
         if(fresh(gh))return `<button class="menu-item primary" id="resumehost">${ic('globe')}<span><b>Voltar para a sua sala ${esc(gh.code)}</b><small>Partida online · você é o anfitrião.</small></span></button>`;
         if(fresh(gg))return `<button class="menu-item primary" id="resumeguest">${ic('globe')}<span><b>Voltar para a sala ${esc(gg.code)}</b><small>Partida online · entrar de novo no mesmo lugar.</small></span></button>`;return '';})()}
       ${saved?`<button class="menu-item primary" id="continue">${ic('play')}<span><b>Continuar partida</b><small>${esc(desc(saved))}</small></span></button>`:''}
+      <button class="menu-item${lsGet('damas-tutorial',null)?'':' primary'}" id="tutstart">${ic('book')}<span><b>Como jogar</b><small>Tutorial jogável: aprenda as regras jogando e conheça as 10 classes.</small></span></button>
       <button class="menu-item" id="quick">${ic('bolt')}<span><b>Partida rápida</b><small>Você contra 1 bot, baralhos sorteados.</small></span></button>
       <button class="menu-item" id="tooffline">${ic('users')}<span><b>Jogar offline</b><small>2 a 4 jogadores no mesmo celular, pessoas ou bots.</small></span></button>
       <button class="menu-item" id="toonline">${ic('globe')}<span><b>Jogar online</b><small>Salas com amigos pela internet, cada um no seu celular.</small></span></button>
@@ -2944,7 +3081,7 @@ function renderGame(){
   const askPop=mine&&ui.askMove?`<div class="askpop" role="alertdialog" aria-labelledby="askt"><b id="askt">Mover sem usar carta?</b>
       <span>Você ainda não usou nenhuma carta neste turno. Depois de mover, não dá mais para usar.</span>
       <div class="askbtns"><button class="btn primary" id="askyes">Mover</button><button class="btn ghost" id="askno">Voltar</button></div>
-      <button class="asknever" id="asknever">Não perguntar mais nesta partida</button></div>`:'';
+      ${ui.tut?'':'<button class="asknever" id="asknever">Não perguntar mais nesta partida</button>'}</div>`:'';
   if(mine&&ui.tgt&&!ui.confirm){sheet=plainSheet(msg,btns,DCOLOR[CARD[s.cards[ui.tgt]].deck],!(tgtCard.pickOpp&&!tgtCard.targets));}
   else if(mine&&s.phase==='play'&&!moves.length&&!ui.sel&&!ui.selTrap){sheet=plainSheet(msg,btns);}
   else if(mine&&ui.confirm){const c=CARD[s.cards[ui.confirm.uid]];
@@ -2972,7 +3109,7 @@ function renderGame(){
   const recent=s.log.map((l,i)=>[l,i]).filter(([l])=>l.to===undefined||l.to===v).slice(-40).reverse().map(([l,i])=>{const c=l.card&&CARD[l.card];
     return `<li class="${c?'withcard':''}"><span class="lt">T${l.t}</span><span class="lbody">${c?`<button class="logchip d-${c.deck} ${c.kind==='armadilha'?'trap':'acao'}" data-log="${i}" aria-label="Ver a carta ${esc(c.name)}">${typeIcon(c.kind)}${esc(c.name)}</button> `:''}${esc(l.text)}</span></li>`;}).join('');
   return `
-   <div class="plates compact${others.length===1?' solo':others.length===3?' trio':''}">${others.map(i=>plateHTML(i,false)).join('')}</div>
+   ${ui.tut?coachHTML():''}<div ${ui.tut?'hidden ':''}class="plates compact${others.length===1?' solo':others.length===3?' trio':''}">${others.map(i=>plateHTML(i,false)).join('')}</div>
    <div class="boardrow">${v!==null?inforail(v):''}<div class="boardwrap" style="--bw:${N>8?'560px':'460px'}"><div class="boardin"><div class="board n${N}${N>8?' big':''}" id="board" style="--n:${N}">${cells}</div>${previewSVG(pv,N,toView,pvColor)}</div>${sheet}</div>${rail}${askPop}</div>
    ${handArea}
    <details id="logdet" ${ui.logOpen?'open':''}><summary>Histórico da partida <span class="zhint">· toque numa carta para ver o que ela faz</span></summary><ul class="loglist">${recent}</ul></details>
@@ -2997,7 +3134,9 @@ function renderOverlay(){
       ${w!==null?`<span class="bigchar">${charSVG(S.players[w].deck)}</span><h2>${w===NET.seat?'Você venceu!':esc(J(w))+' venceu!'}</h2>`:'<h2>Empate</h2>'}<p class="hint">${esc(S.reason)}</p>
       ${host?`<div class="ov-row"><button class="btn primary" id="rematch">Revanche</button><button class="btn ghost" id="tosetup">Voltar à sala</button><button class="btn ghost" id="netleave">Fechar sala</button></div>`
         :`<p class="hint">Esperando o anfitrião escolher a revanche…</p><div class="ov-row"><button class="btn ghost" id="netleave">Sair da sala</button></div>`}</div></div>`;
-  }else if(inGame()&&S.phase==='over'){
+  }else if(ui.tut&&ui.tut.show){html=tutOverlayHTML();
+  }else if(ui.tutDeck&&ui.screen==='tutclasses'){html=tutDeckHTML();
+  }else if(inGame()&&S.phase==='over'&&!ui.tut){
     const w=S.winner;
     html=`<div class="overlay"><div class="ov-in"><p class="eyebrow">Fim de jogo · turno ${S.turn}</p>
       ${w!==null?`<span class="bigchar">${charSVG(S.players[w].deck)}</span><h2>${label(w)} venceu!</h2>`:'<h2>Empate</h2>'}<p class="hint">${esc(S.reason)}</p>
@@ -3051,7 +3190,7 @@ function renderBalance(){
     </tbody></table></div></section>`;
 }
 function renderRules(){
-  return `<div class="rules">
+  return `<div class="rules"><button class="btn primary tutfromrules" id="tutstart">Aprender jogando: tutorial jogável</button>
   <h2>Objetivo</h2><p>Capturar todas as peças dos oponentes ou deixá-los sem nenhuma jogada possível. Com 3 jogadores, quem é eliminado sai e vence o último que sobrar.</p>
   <h2>Damas (regra brasileira)</h2><ul>
    <li>Peças só nas casas escuras. A peça comum anda 1 casa na diagonal para frente e captura para frente e para trás.</li>
@@ -3076,7 +3215,7 @@ function renderRules(){
    <li>Em cada turno você pode usar <b>uma</b> carta, sempre <b>antes</b> de mover. Para usar, <b>arraste a carta da mão para cima</b>. Tocar na carta só mostra o que ela faz.</li>
    <li>Uma vez por turno, você pode <b>descartar</b> uma carta arrastando-a até a lixeira que aparece na tela: ou da mão, ou uma das suas armadilhas armadas (arraste-a até a lixeira). É um descarte por turno no total, então se descartar da mão não dá para desarmar uma armadilha no mesmo turno, e vice-versa.</li>
    <li><b>Ação</b> (carta clara com raio): resolve na hora. <b>Armadilha</b> (carta escura com moldura listrada): fica virada para baixo, no máximo 2 por jogador, e dispara sozinha.</li>
-   <li>Quando uma carta é usada ou uma armadilha dispara, ela aparece grande em cima do tabuleiro para todos verem, junto com o que aconteceu.</li></ul>
+   <li>Quando um oponente usa uma carta ou uma armadilha dispara, ela aparece grande em cima do tabuleiro, junto com o que aconteceu. As suas próprias cartas não interrompem o jogo.</li></ul>
   <h2>Terrenos e marcas</h2><ul>
    <li><b>Muralha</b> (listras marrons): ninguém para nem passa. <b>Gelo</b> (azul claro): quem para escorrega mais uma casa. <b>Portal</b> (roxo): quem para numa ponta sai na outra.</li>
    <li><b>Fosso</b>: só o dono vê. <b>Caveira</b> numa peça: ela foi marcada e some depois do próximo turno dela.</li></ul>
@@ -3092,6 +3231,7 @@ document.addEventListener('click',e=>{
   if(drag.justDropped){drag.justDropped=false;return;}
   if((ui.sel||ui.selTrap)&&!e.target.closest('.sheet')&&!e.target.closest('[data-uid]')&&!e.target.closest('[data-trap]')&&!ui.tgt&&!ui.confirm){ui.sel=null;ui.selTrap=null;render();if(!e.target.closest('button'))return;}
   {const b=e.target.closest('button');if(b&&!b.dataset.r&&!b.dataset.uid&&!b.closest('#sommenu'))SND.play('click');}
+  if(e.target.id==='tutdeckbg'){ui.tutDeck=null;renderOverlay();return;}
   if(e.target.id==='deckbg'){ui.deckView=null;renderOverlay();return;}
   if(e.target.id==='logbg'){ui.logView=null;renderOverlay();return;}
   const t=e.target.closest('button');if(!t)return;
@@ -3107,6 +3247,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.mode){ui.mode=+t.dataset.mode;render();return;}
   if(t.dataset.pick){const[i,k]=t.dataset.pick.split(':');ui.setup[ui.mode][+i].deck=k;render();return;}
   if(t.dataset.omni!==undefined){ui.omni=t.dataset.omni==='1';render();return;}
+  if(t.dataset.tutpick){ui.tutPick=t.dataset.tutpick;ui.tutDeck=t.dataset.tutpick;renderOverlay();return;}
   if(t.dataset.join){netJoin(t.dataset.join);return;}
   if(t.dataset.netnp){ui.netNp=+t.dataset.netnp;render();return;}
   if(t.dataset.lobbynp){netSetNp(+t.dataset.lobbynp);return;}
@@ -3116,6 +3257,14 @@ document.addEventListener('click',e=>{
     if(NET.role==='host')netHostRefresh(false);else netSend({t:'deck',deck:k});render();return;}
   if(t.dataset.ctrl){const[i,k]=t.dataset.ctrl.split(':');ui.setup[ui.mode][+i].ctrl=k;render();return;}
   switch(t.id){
+    case 'tutstart':tutStart(0);return;
+    case 'tutnext':{const i=ui.tut?ui.tut.i+1:0;if(i>=TUT.length)tutFinish();else tutStart(i);return;}
+    case 'tutretry':tutStart(ui.tut?ui.tut.i:0);return;
+    case 'tutskip':{const i=ui.tut.i+1;if(i>=TUT.length)tutFinish();else tutStart(i);return;}
+    case 'tutquit':tutQuit();return;
+    case 'tutplay':{ui.tutDeck=null;const D=Object.keys(DECKS).filter(k=>k!==(ui.tutPick||'ataque'));startGame([{deck:ui.tutPick||'ataque',ctrl:'human'},{deck:D[Math.floor(Math.random()*D.length)],ctrl:'bot'}],false);return;}
+    case 'tutdeck':ui.tutDeck=t.dataset.deck;renderOverlay();return;
+    case 'closetutdeck':ui.tutDeck=null;renderOverlay();return;
     case 'netcreate':netCreate(ui.netNp||2);return;
     case 'joinbycode':netJoin(($('joincode')||{}).value);return;
     case 'netleave':netLeave();window.scrollTo(0,0);return;
@@ -3150,7 +3299,7 @@ document.addEventListener('click',e=>{
     case 'closetrap':ui.selTrap=null;render();return;
     case 'discardtrap':{const u=ui.selTrap,nm=CARD[S.cards[u]].name;act({type:'discard',uid:u});toast(`${nm} foi desarmada e foi para o descarte.`);return;}
     case 'tosetup':if(NET.role==='host'){netBackToLobby();return;}S=null;saveGame();ui.screen='offline';render();return;
-    case 'quit':ui.quit=true;if(!NET.on)clearTimeout(tickT);render();return;
+    case 'quit':if(ui.tut){tutQuit();return;}ui.quit=true;if(!NET.on)clearTimeout(tickT);render();return;
     case 'quitno':ui.quit=false;render();tick();return;
     case 'quityes':ui.quit=false;S=null;saveGame();ui.screen='menu';render();return;
     case 'usecard':useCard(ui.sel);return;
