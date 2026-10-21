@@ -758,6 +758,7 @@ svg.cc-char{width:72px;height:84px}
 .tutdeckbtns{position:sticky;bottom:0;padding-top:8px;background:linear-gradient(transparent,rgba(12,9,20,.95) 30%)}
 .coach-sub{font-family:var(--f-body);font-size:.7rem;color:var(--muted);letter-spacing:.04em}
 .coach-sub{display:block;margin-top:2px}
+.sq.tut-foe .pc{animation:tutfoe .5s ease-in-out infinite alternate}@keyframes tutfoe{to{transform:scale(1.15);filter:drop-shadow(0 0 8px #ff5a5a)}}
 
 /* tema: brinquedo.css */
 /* ===== Tema Brinquedo: amarelo, contornos grossos, cantos redondos ===== */
@@ -2276,6 +2277,7 @@ const TUT=[
   check:s=>{let k=false;forEachPiece(s,p=>{if(p.owner===0&&p.king)k=true;});return k&&s.cardPlayed?'ok':null;}},
  {t:'Armadilha',txt:'Cartas de <b>armadilha</b> (escuras, com moldura listrada) ficam viradas para baixo e disparam sozinhas. Arraste <b>Contra-ataque</b> para cima para armar, depois mova a peça que brilha e veja o que acontece.',
   ok:'O oponente capturou a sua peça e o Contra-ataque destruiu a peça dele. Você pode ter até 2 armadilhas armadas, e os oponentes não sabem quais são.',
+  slow:true,
   bad:'O oponente não caiu na armadilha desta vez. Tente de novo: arme o Contra-ataque antes de mover.',
   mine:[[4,3],[3,2]],foe:[[3,4],[2,5]],hand:['contra'],
   opp:s=>{const m=legalMoves(s).find(m=>m.from[0]===3&&m.from[1]===4&&m.to[0]===5&&m.to[1]===2)||legalMoves(s)[0];return m?{type:'move',from:m.from,to:m.to}:{type:'skip'};},
@@ -2322,11 +2324,33 @@ function tutAfter(a,e,by){
   const T=ui.tut;if(!T||T.done||e)return;const L=TUT[T.i];
   if(a.type==='move'&&by===0)T.moves++;
   if(a.type==='play'&&by===0&&CARD[S.cards[a.uid]]&&CARD[S.cards[a.uid]].kind==='armadilha')T.armed=true;
-  if(L.opp&&a.type==='ready'&&S.current===1){setTimeout(()=>{if(ui.tut===T&&S.current===1&&S.phase==='play'){act(L.opp(S));T.oppDone=true;tutAfter({type:'check'},null,1);}},700);return;}
+  if(L.opp&&a.type==='ready'&&S.current===1){tutOppMove(T,L);return;}
   const r=L.check(S,T);
   if(r){T.done=true;T.res=r;clearTimeout(tickT);clearTimeout(autoT);autoT=null;
     if(r==='ok')try{SND.play('win');}catch(err){}
-    const show=()=>{if(ui.tut!==T)return;if(fxBusy||fxQ.length){setTimeout(show,250);return;}if(r==='ok'){tutAdvance(T);return;}T.show=true;renderOverlay();};setTimeout(show,r==='ok'?1100:450);}
+    const show=()=>{if(ui.tut!==T)return;if(fxBusy||fxQ.length){setTimeout(show,250);return;}
+      if(r==='ok'){if(L.slow){T.okShown=true;render();setTimeout(()=>tutAdvance(T),4200);}else tutAdvance(T);return;}T.show=true;renderOverlay();};
+    setTimeout(show,r==='ok'?1100:450);}
+}
+/* jogada do treinador na lição de armadilha: devagar, para dar tempo de entender */
+function tutOppMove(T,L){
+  const go=()=>{if(ui.tut!==T||S.current!==1||S.phase!=='play')return;if(fxBusy||fxQ.length){setTimeout(go,250);return;}
+    const a=L.opp(S);T.cap='Vez do Treinador. Veja o que ele faz com a sua peça…';render();
+    setTimeout(()=>{if(ui.tut!==T)return;
+      if(a.from){const el=sqEl(a.from);if(el)el.classList.add('tut-foe');}
+      setTimeout(()=>{if(ui.tut!==T)return;
+        const mover=a.from?at(S,...a.from):null,keep=mover&&{...mover};
+        const e=dispatch(S,a);SND.play(e?'error':'move');const evs=S.fx.slice();
+        const now=evs.filter(x=>x.kind!=='trap'),later=evs.filter(x=>x.kind==='trap');
+        // mostra primeiro a captura com a peça dele ainda no tabuleiro; a armadilha vem depois
+        const ghost=keep&&later.length&&!at(S,...a.to);if(ghost)S.board[a.to[0]][a.to[1]]=keep;
+        render();if(now.length)enqueueFx(now);
+        setTimeout(()=>{if(ui.tut!==T)return;
+          if(later.length){enqueueFx(later);setTimeout(()=>{if(ghost&&ui.tut===T){S.board[a.to[0]][a.to[1]]=null;render();}},700);}
+          T.oppDone=true;tutAfter({type:'check'},null,1);},1700);
+      },1300);
+    },900);};
+  setTimeout(go,600);
 }
 function tutQuit(){ui.tut=null;S=null;NAMES=null;ui.screen='menu';render();window.scrollTo(0,0);}
 function tutFinish(){ui.tut=null;S=null;NAMES=null;lsSet('damas-tutorial','1');ui.screen='tutclasses';render();window.scrollTo(0,0);}
@@ -2336,7 +2360,7 @@ function coachHTML(){
     <div class="coach-top"><span class="coach-step">Lição ${T.i+1} de ${TUT.length}</span>
       <div class="coach-dots" aria-hidden="true">${TUT.map((_,k)=>`<i class="${k<T.i?'done':k===T.i?'now':''}"></i>`).join('')}</div>
       <button class="btn ghost small" id="tutskip">Pular</button><button class="btn ghost small" id="tutquit">Sair</button></div>
-    <div class="coach-body">${charSVG('relojoeiro','coachchar')}<div><h3>${L.t}${L.demo?` <small class="coach-sub">${(T.scene||0)+1} de ${L.scenes.length} · só assista</small>`:''}</h3><p>${L.demo?T.cap||'':L.txt}</p></div></div></div>`;
+    <div class="coach-body">${charSVG('relojoeiro','coachchar')}<div><h3>${T.okShown?'Muito bem! ':''}${L.t}${L.demo?` <small class="coach-sub">${(T.scene||0)+1} de ${L.scenes.length} · só assista</small>`:''}</h3><p>${T.okShown?L.ok:L.demo||T.cap?T.cap||'':L.txt}</p></div></div></div>`;
 }
 function tutOverlayHTML(){
   const T=ui.tut;if(!T||!T.show)return '';const L=TUT[T.i],last=T.i===TUT.length-1;
@@ -2573,7 +2597,7 @@ function runFx(){
       ${ev.roll?`<div class="die">${ev.roll}</div>`:''}
       <div class="caption">${esc(ev.text)}</div>
       <div class="skiphint">toque para continuar</div></div>`;
-    dur=ev.annulled?2600:(isTrap?2800:2400);
+    dur=ev.annulled?2600:(isTrap?2800:2400);if(ui.tut&&isTrap)dur+=1800;
   }else if(ev.kind==='arm'){
     color=DCOLOR[ev.deck];
     html=`<div class="stage-in d-${ev.deck}"><div class="who-line"><b>${J(ev.player)}</b> armou</div>
