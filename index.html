@@ -774,6 +774,17 @@ svg.cc-char{width:72px;height:84px}
 .hand{overflow-y:hidden;padding-top:22px;padding-bottom:24px;scrollbar-width:none}
 .hand::-webkit-scrollbar{display:none}
 .tut-handwant .hand{padding-top:48px}
+/* topo: tema e som no canto direito; nome sem cortar */
+header .brand{flex:1 1 auto;width:100%;min-width:0}
+header #temabtn{margin-left:auto}
+.brand h1{line-height:1.25;padding:.04em .08em .1em 0;overflow:visible;white-space:nowrap}
+html[data-tema="brinquedo"] .brand h1{-webkit-text-stroke:5px #1d1340;paint-order:stroke fill;text-shadow:0 3px 0 #1d1340;color:#fff;letter-spacing:.02em}
+/* carta em cima da lixeira: borda vermelha e aviso de descarte */
+.dragghost.to-trash{filter:saturate(.55) brightness(.85)!important;outline:4px solid #ff4d4d;outline-offset:2px;box-shadow:0 0 0 2px #fff3,0 0 28px #ff4d4dcc,0 18px 40px #000b!important}
+.dragghost::after{content:'Descartar';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.6) rotate(-8deg);opacity:0;padding:6px 12px;border-radius:8px;border:3px solid #fff;background:#e23c3c;color:#fff;font:900 .9rem/1 var(--f-body);letter-spacing:.08em;text-transform:uppercase;box-shadow:0 6px 16px #000a;transition:opacity .12s,transform .12s;pointer-events:none;z-index:5}
+.dragghost.to-trash::after{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(-8deg)}
+.dragghost::after{inset:auto!important;left:50%!important;top:50%!important;width:auto!important;height:auto!important;background:#e23c3c!important;border:3px solid #fff!important;font-size:15px!important;white-space:nowrap;margin:0!important}
+.dragghost::after{font-size:12px!important;letter-spacing:.05em!important;padding:5px 9px!important}
 
 /* tema: brinquedo.css */
 /* ===== Tema Brinquedo: amarelo, contornos grossos, cantos redondos ===== */
