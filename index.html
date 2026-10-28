@@ -770,6 +770,10 @@ svg.cc-char{width:72px;height:84px}
 .hand .card.tut-want::before{left:-4px;transform:none;animation-name:tutbob2}
 @keyframes tutbob2{to{transform:translateY(-6px)}}
 .tut-handwant .hand .card:not(.tut-want){filter:saturate(.5) brightness(.7)!important}
+/* mão sem barra de rolagem vertical */
+.hand{overflow-y:hidden;padding-top:22px;padding-bottom:24px;scrollbar-width:none}
+.hand::-webkit-scrollbar{display:none}
+.tut-handwant .hand{padding-top:48px}
 
 /* tema: brinquedo.css */
 /* ===== Tema Brinquedo: amarelo, contornos grossos, cantos redondos ===== */
