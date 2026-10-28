@@ -759,6 +759,17 @@ svg.cc-char{width:72px;height:84px}
 .coach-sub{font-family:var(--f-body);font-size:.7rem;color:var(--muted);letter-spacing:.04em}
 .coach-sub{display:block;margin-top:2px}
 .sq.tut-foe .pc{animation:tutfoe .5s ease-in-out infinite alternate}@keyframes tutfoe{to{transform:scale(1.15);filter:drop-shadow(0 0 8px #ff5a5a)}}
+/* tutorial: carta que deve ser usada */
+.hand .card.tut-want{z-index:3;overflow:visible;transform:translateY(-10px) rotate(0)!important;outline:3px solid var(--hi);outline-offset:3px;animation:tutwant 1.1s ease-in-out infinite}
+@keyframes tutwant{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--hi) 70%,transparent),0 10px 24px #000a}50%{box-shadow:0 0 0 10px color-mix(in srgb,var(--hi) 0%,transparent),0 0 26px color-mix(in srgb,var(--hi) 80%,transparent)}}
+.hand .card.tut-want::before{content:attr(data-hint);position:absolute;left:50%;top:-34px;transform:translateX(-50%);white-space:nowrap;padding:5px 10px;border-radius:99px;background:var(--hi);color:#1b1408;font:800 .7rem/1 var(--f-body);letter-spacing:.04em;text-transform:uppercase;box-shadow:0 4px 12px #0008;animation:tutbob .9s ease-in-out infinite alternate;pointer-events:none}
+@keyframes tutbob{to{transform:translate(-50%,-6px)}}
+.tut-handwant .hand{padding-top:44px;overflow:visible}
+.tut-handwant .hand .card:not(.tut-want){filter:saturate(.5) brightness(.75)}
+@media (prefers-reduced-motion:reduce){.hand .card.tut-want,.hand .card.tut-want::before{animation:none}}
+.hand .card.tut-want::before{left:-4px;transform:none;animation-name:tutbob2}
+@keyframes tutbob2{to{transform:translateY(-6px)}}
+.tut-handwant .hand .card:not(.tut-want){filter:saturate(.5) brightness(.7)!important}
 
 /* tema: brinquedo.css */
 /* ===== Tema Brinquedo: amarelo, contornos grossos, cantos redondos ===== */
@@ -2269,22 +2280,22 @@ const TUT=[
  {t:'Carta de ação',txt:'Agora as cartas! Em cada turno você pode usar <b>1 carta, antes de mover</b>. <b>Arraste a carta Fúria da sua mão para cima</b> para usar. Depois capture: a Fúria dá <b>mais uma jogada</b>.',
   ok:'Fúria usada, captura feita e jogada extra. Cartas de ação (claras, com raio) resolvem na hora.',
   bad:'Você moveu antes de usar a carta. A carta só pode ser usada antes de mover. Tente de novo: primeiro arraste a Fúria para cima.',
-  mine:[[5,2],[6,7]],foe:[[4,3],[0,1]],hand:['furia'],
+  mine:[[5,2],[6,7]],foe:[[4,3],[0,1]],hand:['furia'],want:'furia',hint:'Arraste para cima ↑',
   check:(s,T)=>{if(T.moves>=1&&!s.cardPlayed)return 'bad';return s.cardPlayed&&T.moves>=2?'ok':null;}},
  {t:'Carta com alvo',txt:'Algumas cartas pedem um alvo. Arraste <b>Promoção Antecipada</b> para cima, toque na <b>sua peça marcada</b> e depois em <b>Confirmar</b>. O tabuleiro mostra a prévia antes.',
   ok:'A peça virou dama sem precisar chegar ao fim. Depois de usar a carta, você ainda move uma peça normalmente.',
-  mine:[[3,2],[6,5]],foe:[[0,5],[0,1]],hand:['promocao'],
+  mine:[[3,2],[6,5]],foe:[[0,5],[0,1]],hand:['promocao'],want:'promocao',hint:'Arraste para cima ↑',
   check:s=>{let k=false;forEachPiece(s,p=>{if(p.owner===0&&p.king)k=true;});return k&&s.cardPlayed?'ok':null;}},
  {t:'Armadilha',txt:'Cartas de <b>armadilha</b> (escuras, com moldura listrada) ficam viradas para baixo e disparam sozinhas. Arraste <b>Contra-ataque</b> para cima para armar, depois mova a peça que brilha e veja o que acontece.',
   ok:'O oponente capturou a sua peça e o Contra-ataque destruiu a peça dele. Você pode ter até 2 armadilhas armadas, e os oponentes não sabem quais são.',
   slow:true,
   bad:'O oponente não caiu na armadilha desta vez. Tente de novo: arme o Contra-ataque antes de mover.',
-  mine:[[4,3],[3,2]],foe:[[3,4],[2,5]],hand:['contra'],
+  mine:[[4,3],[3,2]],foe:[[3,4],[2,5]],hand:['contra'],want:'contra',hint:'Arraste para cima ↑',
   opp:s=>{const m=legalMoves(s).find(m=>m.from[0]===3&&m.from[1]===4&&m.to[0]===5&&m.to[1]===2)||legalMoves(s)[0];return m?{type:'move',from:m.from,to:m.to}:{type:'skip'};},
   check:(s,T)=>{if(!T.oppDone)return null;return s.players[0].traps.length===0&&T.armed?'ok':'bad';}},
  {t:'Descartar',txt:'Carta que não serve agora? Uma vez por turno você pode <b>descartar</b>: arraste a carta até a <b>lixeira</b> que aparece na tela.',
   ok:'Descartada. A mão tem no máximo 5 cartas e você compra 1 por turno. Quando o monte acaba, o descarte é embaralhado de novo.',
-  mine:[[5,2],[5,4],[6,5]],foe:[[0,7],[1,2]],hand:['furia','promocao','contra'],
+  mine:[[5,2],[5,4],[6,5]],foe:[[0,7],[1,2]],hand:['furia','promocao','contra'],want:'furia',hint:'Arraste até a lixeira',
   check:s=>s.discarded?'ok':null},
 ];
 function tutState(L){
@@ -2384,6 +2395,16 @@ function tutDeckHTML(){
     <span class="bigchar">${charSVG(k)}</span><h2 class="dv-title">${charName(k)}</h2><p class="dv-char">${icon(k)}${charLine(k)}</p><p class="hint">${d.blurb}</p>
     <div class="dv-grid">${cs.map(c=>cardHTML(c,{full:true})).join('')}</div>
     <div class="ov-row tutdeckbtns"><button class="btn primary" id="tutplay">Jogar com ${charName(k)} contra um bot</button><button class="btn ghost" id="closetutdeck">Voltar</button></div></div></div>`;
+}
+
+/* destaca na mão a carta que a lição pede para usar */
+function tutMark(){
+  if(!ui.tut||!S||ui.tut.done)return;const L=TUT[ui.tut.i];if(!L.want)return;
+  if(L.want&&(L.hint.includes('lixeira')?S.discarded:S.cardPlayed))return;
+  const P=S.players[0],u=P.hand.find(x=>S.cards[x]===L.want);if(!u)return;
+  const el=document.querySelector(`.hand .card[data-uid="${u}"]`);if(!el)return;
+  el.classList.add('tut-want');el.setAttribute('data-hint',L.hint);
+  const hw=document.querySelector('.handwrap');if(hw)hw.classList.add('tut-handwant');
 }
 
 /* =====================================================================
@@ -2874,6 +2895,7 @@ function render(){
   }
   lastOrient=S?ui.orient:null;
   if(drag.on){const el=document.querySelector(`[data-uid="${drag.uid}"],[data-trap="${drag.uid}"]`);if(el)el.classList.add('dragging');}
+  if(ui.tut)tutMark();
   const bar=document.querySelector('.sheet[data-pv]');
   const key=bar?JSON.stringify(ui.confirm||ui.sel):null;
   ui.pvKey=key;
