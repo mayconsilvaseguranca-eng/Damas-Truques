@@ -789,6 +789,61 @@ html[data-tema="brinquedo"] .brand h1{-webkit-text-stroke:5px #1d1340;paint-orde
 .dragghost.to-trash{filter:saturate(.8)!important;outline:5px solid #ff1a3c;outline-offset:2px;box-shadow:0 0 0 3px #ff1a3c55,0 0 34px #ff1a3c,0 0 60px #ff1a3c88,0 18px 40px #000b!important}
 .dragghost::after{background:#ff1a3c!important;box-shadow:0 0 18px #ff1a3c,0 6px 16px #000a!important}
 .dragghost{opacity:1!important}.dragghost.dim{filter:none}
+/* sala: classe secreta, ver cartas */
+.mystery{flex:none;width:44px;height:51px;display:flex;align-items:center;justify-content:center;border-radius:50%;font:800 1.4rem/1 var(--f-display);color:var(--muted);background:var(--card-lo);border:2px dashed var(--line)}
+.peekbtn{align-self:flex-start;padding:8px 12px;font-size:.74rem}
+/* mão travada */
+.lockico{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px}
+.lockchip{display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:2px 8px;border-radius:99px;background:#e23c3c;color:#fff;font-weight:800;letter-spacing:.03em;text-transform:none}
+.lockchip .lockico{width:12px;height:12px}
+.handwrap.locked .hand .card{position:relative;filter:grayscale(.6) brightness(.75)}
+.handwrap.locked .hand .card::after{content:'';position:absolute;inset:0;z-index:4;pointer-events:none;border-radius:inherit;background:rgba(20,10,14,.35) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='11' width='14' height='10' rx='2' fill='%23e23c3c'/%3E%3Cpath d='M8 11V8a4 4 0 0 1 8 0v3'/%3E%3C/svg%3E") center/46px no-repeat}
+.plate .stats .handlock{color:#ff5a5a;font-weight:800}
+.plate .stats .handlock .lockico{margin-right:2px;color:#ff5a5a}
+/* sua vez */
+.myturnbanner .banner span{font-size:1.25em}
+body.myturn .boardrow .boardwrap{box-shadow:0 0 0 3px var(--hi),0 0 26px color-mix(in srgb,var(--hi) 55%,transparent);animation:myturnglow 1.6s ease-in-out infinite}
+@keyframes myturnglow{50%{box-shadow:0 0 0 3px var(--hi),0 0 10px color-mix(in srgb,var(--hi) 25%,transparent)}}
+body.myturn .handlabel::after{content:' · sua vez';color:var(--hi);font-weight:800}
+body.myturn .inforail .ir-name{color:var(--hi)}
+@media (prefers-reduced-motion:reduce){body.myturn .boardrow .boardwrap{animation:none}}
+/* info da carta no topo, sobre as estatísticas, sem cobrir o tabuleiro */
+.topzone{position:relative;display:flex;flex-direction:column;gap:8px}
+.topzone .sheet.pop{position:absolute!important;left:0!important;right:0!important;top:auto!important;bottom:0!important;width:auto!important;max-width:none!important;transform:none!important;animation:popup .18s ease-out!important;z-index:25;overflow-y:auto;border-radius:16px}
+.topzone .sheet.pop.hint{border-radius:16px;padding:8px 10px}
+.topzone .sheet.pop.hint .sheet-in{flex-direction:row}
+.topzone .sheet.pop.hint p{white-space:normal}
+@keyframes popup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+/* chat da sala */
+.chatbtn{position:relative}
+.chatbadge{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;padding:0 4px;box-sizing:border-box;border-radius:99px;background:#ff1a3c;color:#fff;font:800 .66rem/18px var(--f-body);font-style:normal;text-align:center;box-shadow:0 0 0 2px var(--bg)}
+.chatbadge[hidden]{display:none}
+.chatpanel{position:fixed;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;width:min(520px,calc(100vw - 20px));height:min(62vh,460px);display:flex;flex-direction:column;border-radius:18px;background:var(--surface);border:2px solid var(--hi);box-shadow:0 18px 50px #000c;overflow:hidden;animation:popup .18s ease-out}
+.chatpanel[hidden]{display:none}
+.chat-h{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.chat-h b{color:var(--hi);font-family:var(--f-display);font-weight:400}
+.chatlist{list-style:none;margin:0;padding:10px 12px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+.chatlist li{align-self:flex-start;max-width:85%;padding:6px 10px;border-radius:12px 12px 12px 4px;background:var(--card-lo);display:flex;flex-direction:column;gap:1px;font-size:.9rem;line-height:1.3;overflow-wrap:anywhere}
+.chatlist li b{font-size:.72rem;color:var(--hi)}
+.chatlist li.mine{align-self:flex-end;border-radius:12px 12px 4px 12px;background:color-mix(in srgb,var(--hi) 22%,var(--card-lo))}
+.chatlist li.empty{align-self:center;background:none;color:var(--muted)}
+.chatform{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line)}
+.chatform input{flex:1;min-width:0;font:inherit;font-size:1rem;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card-lo);color:var(--fg)}
+.chatform .btn{flex:none;padding:10px 14px}
+body.ingame .chatbtn span{display:none}
+.deckmodal #closepeek,.deckmodal #closedeck{position:sticky;bottom:0;z-index:3;box-shadow:0 -8px 20px rgba(12,9,20,.9)}
+@media (max-width:480px){header .temabtn span{display:none}header .temabtn{padding:7px}}
+.deckmodal #closepeek,.deckmodal #closedeck{z-index:10}
+.deckmodal .dv-grid{position:relative;z-index:1}
+.handlabel{white-space:nowrap;display:flex;align-items:center;flex-wrap:nowrap;overflow:hidden}
+.lockchip{font-size:.66rem;padding:2px 7px}
+.topzone .sheet.pop{padding:8px 10px!important}
+.topzone .sheet.pop .sheet-in{gap:3px}
+.topzone .sheet.pop h4{font-size:.8rem}
+.topzone .sheet.pop p{font-size:.76rem;line-height:1.25}
+.topzone .sheet.pop .zhint,.topzone .sheet.pop .why,.topzone .sheet.pop .draghint{font-size:.68rem}
+.topzone .sheet.pop .pvtext{font-size:.72rem;padding:3px 7px}
+.topzone .sheet.pop .row .btn{padding:7px 6px;font-size:.7rem}
 
 /* tema: brinquedo.css */
 /* ===== Tema Brinquedo: amarelo, contornos grossos, cantos redondos ===== */
@@ -1325,6 +1380,7 @@ html[data-tema="taverna"] .wr{background:var(--surface2)}
     <div class="brand"><h1>Damas &amp; Truques</h1>
       <span class="suits" aria-hidden="true"><i class="d-ataque"></i><i class="d-defesa"></i><i class="d-distancia"></i><i class="d-trapaceiro"></i><i class="d-necromante"></i><i class="d-arquiteto"></i><i class="d-realeza"></i><i class="d-enxame"></i><i class="d-apostador"></i><i class="d-relojoeiro"></i></span>
       <button class="temabtn" id="temabtn" aria-label="Trocar tema" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.9 1.2-1.8l-.4-.9c-.5-1 .3-2.3 1.4-2.3H17a4 4 0 0 0 4-4c0-5-4-9-9-9z"/><circle cx="7.5" cy="11" r="1.3"/><circle cx="10.5" cy="7" r="1.3"/><circle cx="15" cy="7.5" r="1.3"/></svg><span>Tema</span></button>
+      <button class="temabtn chatbtn" id="chatbtn" aria-label="Chat da sala" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg><span>Chat</span><em class="chatbadge" id="chatbadge" hidden>0</em></button>
       <button class="temabtn" id="sombtn" aria-label="Som e música" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg><span>Som</span></button></div>
   </header>
   <main id="main" style="display:flex;flex-direction:column;gap:12px"></main>
@@ -1335,6 +1391,7 @@ html[data-tema="taverna"] .wr{background:var(--surface2)}
 <div id="toast" class="toast" hidden></div>
 <div id="temamenu" class="temamenu" hidden></div>
 <div id="sommenu" class="temamenu sommenu" hidden></div>
+<div id="chatpanel" class="chatpanel" hidden></div>
 <script>
 /*ENGINE-START*/
 /* =====================================================================
@@ -1684,8 +1741,9 @@ function newGame(opts){
     s.players.push({deck:d,ctrl:(opts.ctrl&&opts.ctrl[i])||'human',pile,hand:[],traps:[],discard:[],silenced:0,grave:0,lost:0,lostMark:0,lostRecent:0,kingsLost:0,lastCard:null,out:false,skip:false});
     for(let k=0;k<3;k++)draw(s,i);
   });
-  draw(s,0);s.fx=[];
-  log(s,'A partida começou.');
+  const first=Math.max(0,Math.min(np-1,opts.first|0));s.current=first;
+  draw(s,first);s.fx=[];
+  log(s,'A partida começou.');if(opts.first!=null)log(s,`Sorteio: ${J(first)} começa.`);
   return s;
 }
 function draw(s,i){
@@ -2093,7 +2151,7 @@ function netClient(will){
   const c=MQ.Client(BROKERS,{clientId:'dt-'+netId(),keepalive:20,will});
   c.onstatus=s=>{NET.status=s;if(ui.screen==='online'||ui.screen==='lobby')render();};
   c.onmessage=netOnMessage;
-  c.onconnect=()=>{if(NET.role==='host')netHostRefresh(true);else if(NET.role==='guest')netSend({t:'hello',name:netName()});};
+  c.onconnect=()=>{if(NET.role==='host')netHostRefresh(true);else if(NET.role==='guest')netSend({t:'hello',name:netName(),deck:lsGet('damas-deck',null)});};
   NET.cli=c;return c;
 }
 function netBrowse(){
@@ -2108,7 +2166,7 @@ function netLeave(silent){
     else if(NET.role==='guest'){netSend({t:'bye'});lsSet('damas-online-guest',null);}
   }
   const c=NET.cli;NET.cli=null;if(c)setTimeout(()=>c.end(),150);
-  Object.assign(NET,{on:false,role:null,code:null,seat:null,lobby:null,guests:{},hostLost:false});
+  Object.assign(NET,{on:false,role:null,code:null,seat:null,lobby:null,guests:{},hostLost:false,chat:[],unread:0});ui.chatOpen=false;chatRender();
   NAMES=null;
   if(!silent){S=null;ui.screen='online';ui.quit=false;netBrowse();render();}
 }
@@ -2126,7 +2184,7 @@ function netCreate(np){
 }
 function netHostStart(){
   const c=netClient({topic:NETP+'rooms/'+NET.code,payload:'',retain:true});
-  c.sub(NETP+'rooms/+');c.sub(NETP+'r/'+NET.code+'/h');
+  c.sub(NETP+'rooms/+');c.sub(NETP+'r/'+NET.code+'/h');c.sub(NETP+'r/'+NET.code+'/chat');
   netStopTimers();
   NET.timers.push(setInterval(netHostBeat,4000));
   ui.screen=S&&NET.lobby.status==='jogando'?'game':'lobby';ui.tab='jogar';render();
@@ -2142,10 +2200,12 @@ function netResumeHost(){
 }
 function netRoomInfo(){const L=NET.lobby;return{code:NET.code,name:L.seats[0].name,np:L.np,taken:L.seats.filter(x=>x.kind==='host'||x.kind==='guest').length,
   open:L.seats.filter(x=>x.kind==='open').length,status:L.status,ts:Date.now()};}
+/* a classe de cada um fica escondida na sala até a partida começar */
+function netLobbyPublic(keepSeat){const L=NET.lobby;return {...L,seats:L.seats.map((st,i)=>i===keepSeat||L.status!=='lobby'?st:{...st,deck:null,picked:!!st.deck})};}
 function netHostRefresh(all){
   if(!NET.cli)return;
   NET.cli.pub(NETP+'rooms/'+NET.code,JSON.stringify(netRoomInfo()),true);
-  NET.cli.pub(NETP+'r/'+NET.code+'/all',JSON.stringify({t:'lobby',lobby:NET.lobby}));
+  NET.cli.pub(NETP+'r/'+NET.code+'/all',JSON.stringify({t:'lobby',lobby:netLobbyPublic()}));
   if(all&&S&&NET.lobby.status==='jogando')netSync([],null,null);
 }
 let netRoomBeat=0;
@@ -2175,7 +2235,7 @@ function netHostMsg(m){
       toast(`${name} entrou na sala.`);SND.play('select');}
     else{L.seats[i].name=name;L.seats[i].off=false;L.seats[i].left=false;
       if(S&&S.players[i]&&S.players[i].ctrl==='bot'&&!S.players[i].out){S.players[i].ctrl='remote';S.players[i].left=false;log(S,`${J(i)} voltou para a partida.`);}}
-    netTo(id,{t:'joined',seat:i,lobby:L});netHostRefresh(false);
+    netTo(id,{t:'joined',seat:i,lobby:netLobbyPublic(i)});netHostRefresh(false);
     if(S&&L.status==='jogando')netSync([],null,null);
     render();return;}
   const i=netGuestSeat(id);if(i<0)return;
@@ -2197,7 +2257,8 @@ function netBeginGame(){
   const L=NET.lobby;
   L.seats.forEach(st=>{if(st.kind==='open')Object.assign(st,{kind:'bot',deck:st.deck||randDeck()});});
   const names=L.seats.map((st,i)=>st.kind==='bot'?'Bot '+(i+1):st.name);
-  S=newGame({decks:L.seats.map(x=>x.deck||randDeck()),ctrl:L.seats.map(x=>x.kind==='host'?'human':x.kind==='guest'?'remote':'bot'),seed:Date.now()&0x7fffffff,omni:L.omni});
+  NAMES=names;
+  S=newGame({decks:L.seats.map(x=>x.deck||randDeck()),ctrl:L.seats.map(x=>x.kind==='host'?'human':x.kind==='guest'?'remote':'bot'),seed:Date.now()&0x7fffffff,omni:L.omni,first:Math.floor(Math.random()*L.seats.length)});
   S.names=names;NAMES=names;
   L.status='jogando';ui.screen='game';lastOrient=null;ui.pending=[];ui.orient=0;
   lsSet('damas-deck',L.seats[0].deck);
@@ -2233,7 +2294,7 @@ function netJoin(code){
   if(code.length!==4){toast('O código da sala tem 4 letras ou números.');return;}
   Object.assign(NET,{on:true,role:'guest',code,seat:null,id:netId(),lobby:null,hostLost:false,joining:Date.now()});
   const c=netClient({topic:NETP+'r/'+code+'/h',payload:JSON.stringify({t:'bye',id:netId(),soft:true}),retain:false});
-  c.sub(NETP+'r/'+code+'/g/'+NET.id);c.sub(NETP+'r/'+code+'/all');
+  c.sub(NETP+'r/'+code+'/g/'+NET.id);c.sub(NETP+'r/'+code+'/all');c.sub(NETP+'r/'+code+'/chat');
   NET.hostSeen=Date.now();
   netStopTimers();
   NET.timers.push(setInterval(()=>{
@@ -2251,7 +2312,8 @@ function netGuestMsg(m){
   if(m.t==='nope'){netLeave(true);ui.screen='online';netBrowse();toast(m.why);render();return;}
   if(m.t==='closed'){netLeave(true);S=null;ui.screen='online';netBrowse();toast('O anfitrião fechou a sala.');render();return;}
   if(m.t==='joined'){NET.seat=m.seat;NET.lobby=m.lobby;if(!S)ui.screen='lobby';render();return;}
-  if(m.t==='lobby'){NET.lobby=m.lobby;const i=NET.lobby.seats.findIndex(x=>x.id===NET.id);if(i>=0)NET.seat=i;if(ui.screen==='lobby')render();return;}
+  if(m.t==='lobby'){const mine=NET.lobby&&NET.seat!=null&&NET.lobby.seats[NET.seat]?NET.lobby.seats[NET.seat].deck:null;NET.lobby=m.lobby;
+    if(mine&&NET.seat!=null&&NET.lobby.seats[NET.seat]&&NET.lobby.seats[NET.seat].id===NET.id)NET.lobby.seats[NET.seat].deck=mine;const i=NET.lobby.seats.findIndex(x=>x.id===NET.id);if(i>=0)NET.seat=i;if(ui.screen==='lobby')render();return;}
   if(m.t==='tolobby'){S=null;ui.screen='lobby';render();return;}
   if(m.t==='err'){toast(m.msg);SND.play('error');return;}
   if(m.t==='state'){
@@ -2272,6 +2334,7 @@ function netGuestMsg(m){
 function netResumeGuest(){let d=null;try{d=JSON.parse(lsGet('damas-online-guest','null'));}catch(e){}if(d)netJoin(d.code);}
 
 function netOnMessage(topic,txt){
+  if(NET.code&&topic===NETP+'r/'+NET.code+'/chat'){let m;try{m=JSON.parse(txt);}catch(e){return;}if(m&&m.text)chatAdd(m);return;}
   if(topic.startsWith(NETP+'rooms/')){const code=topic.slice((NETP+'rooms/').length);
     if(!txt){delete NET.rooms[code];}else{try{NET.rooms[code]=JSON.parse(txt);}catch(e){}}
     if(ui.screen==='online')render();return;}
@@ -2281,6 +2344,41 @@ function netOnMessage(topic,txt){
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&NET.cli)NET.cli.kick();});
 window.addEventListener('pagehide',()=>{if(NET.role==='guest')netSend({t:'bye',soft:true});});
+
+/* ---------- chat da sala ---------- */
+NET.chat=[];NET.unread=0;
+function chatSend(text){
+  text=String(text||'').replace(/\s+/g,' ').trim().slice(0,200);if(!text||!NET.cli||!NET.code)return false;
+  const m={id:NET.id,name:cleanName(netName())||'Jogador',text,ts:Date.now(),k:Math.random().toString(36).slice(2,8)};
+  if(!NET.cli.pub(NETP+'r/'+NET.code+'/chat',JSON.stringify(m))){toast('Sem conexão. A mensagem não foi enviada.');return false;}
+  return true;
+}
+function chatAdd(m){
+  if(NET.chat.some(x=>x.k===m.k&&x.id===m.id))return;
+  NET.chat.push({id:String(m.id||''),name:cleanName(m.name)||'?',text:String(m.text).slice(0,200),ts:+m.ts||Date.now(),k:m.k});
+  if(NET.chat.length>80)NET.chat.shift();
+  const mine=m.id===NET.id;
+  if(!ui.chatOpen&&!mine){NET.unread++;toast(`${cleanName(m.name)}: ${String(m.text).slice(0,60)}`);try{SND.play('select');}catch(e){}}
+  chatRender();
+}
+function chatRender(){
+  const b=$('chatbtn'),badge=$('chatbadge'),p=$('chatpanel');if(!b||!p)return;
+  const show=!!(NET.on&&NET.code);b.hidden=!show;
+  badge.hidden=!NET.unread;badge.textContent=NET.unread>9?'9+':NET.unread;
+  if(!show||!ui.chatOpen){p.hidden=true;return;}
+  const list=NET.chat.map(m=>`<li class="${m.id===NET.id?'mine':''}"><b>${esc(m.name)}</b><span>${esc(m.text)}</span></li>`).join('')||'<li class="empty">Nenhuma mensagem ainda. Diga oi!</li>';
+  if(p.hidden||!p.querySelector('form')){
+    p.innerHTML=`<div class="chat-h"><b>Chat da sala ${esc(NET.code)}</b><button class="btn ghost small" id="chatclose">Fechar</button></div><ul class="chatlist" id="chatlist"></ul>
+      <form class="chatform" id="chatform"><input id="chatinput" maxlength="200" autocomplete="off" placeholder="Escreva uma mensagem"><button class="btn primary" type="submit">Enviar</button></form>`;
+    p.hidden=false;}
+  const ul=$('chatlist');ul.innerHTML=list;ul.scrollTop=ul.scrollHeight;
+}
+document.addEventListener('submit',e=>{if(e.target.id!=='chatform')return;e.preventDefault();const i=$('chatinput');if(chatSend(i.value))i.value='';i.focus();});
+document.addEventListener('click',e=>{
+  const t=e.target.closest('button');if(!t)return;
+  if(t.id==='chatbtn'){ui.chatOpen=!ui.chatOpen;NET.unread=0;chatRender();if(ui.chatOpen)setTimeout(()=>{const i=$('chatinput');if(i)i.focus();},50);}
+  else if(t.id==='chatclose'){ui.chatOpen=false;chatRender();}
+});
 
 /* =====================================================================
    TUTORIAL JOGÁVEL — lições curtas num tabuleiro montado para cada
@@ -2610,12 +2708,12 @@ function runFx(){
   try{const k=ev.kind;
     if(k==='cap')SND.play('capture');else if(k==='promo')SND.play('promote');
     else if(k==='card')SND.play(ev.annulled&&!ev.late?'annul':'card');else if(k==='trap')SND.play('trap');else if(k==='arm')SND.play('arm');
-    else if(k==='banner'){const h=ev.html||'';SND.play(/reembaralhado/.test(h)?'shuffle':/eliminado/.test(h)?'eliminate':/Fúria|Pressa/.test(h)?'extra':/Vez d[eo] /.test(h)?(S&&!isBot(S.current)&&(!NET.on||S.current===NET.seat)?'turn':''):'click');}
+    else if(k==='banner'){const h=ev.html||'';SND.play(/reembaralhado/.test(h)?'shuffle':/eliminado/.test(h)?'eliminate':/Fúria|Pressa/.test(h)?'extra':ev.turnOf!=null||/Vez d[eo] /.test(h)?(S&&ev.turnOf!=null&&S.players[ev.turnOf]&&ev.turnOf===viewer()&&!isBot(ev.turnOf)?'turn':''):'click');}
   }catch(e){}
   if(ev.kind==='cap'||ev.kind==='promo'){if(ev.delay)setTimeout(()=>pieceFx(ev),60);else pieceFx(ev);runFx();return;}
   if(ev.kind==='flash'){flashSquares(ev.squares,ev.color);runFx();return;}
   // carta que você mesmo acabou de usar/armar: sem tela grande, só o brilho no tabuleiro
-  if(S&&(ev.kind==='card'||ev.kind==='arm')&&ev.player!=null&&!isBot(ev.player)&&!ev.late&&!ev.roll&&!(ev.annulled&&!ev.delayed)){
+  if(S&&(ev.kind==='card'||ev.kind==='arm')&&ev.player!=null&&ev.player===viewer()&&!isBot(ev.player)&&!ev.late&&!ev.roll&&!(ev.annulled&&!ev.delayed)){
     const dk=ev.kind==='arm'?ev.deck:CARD[ev.id]&&CARD[ev.id].deck,col=DCOLOR[dk]||'#f6c453';
     const bd=document.getElementById('board');
     if(bd&&!reduce){const r=bd.getBoundingClientRect();FX.burst(r.left+r.width/2,r.top+r.height/2,[col,'#fff'],16,{speed:4,g:.05,size:3,life:34});}
@@ -2642,6 +2740,9 @@ function runFx(){
     color=DCOLOR[ev.deck];
     html=`<div class="stage-in d-${ev.deck}"><div class="who-line"><b>${J(ev.player)}</b> armou</div>
       <div class="cardbackbig"></div><div class="caption">Uma armadilha virada para baixo. Cuidado com a próxima jogada.</div></div>`;dur=1700;
+  }else if(ev.kind==='banner'&&ev.turnOf!=null&&S&&S.players[ev.turnOf]&&ev.turnOf===viewer()&&!isBot(ev.turnOf)){
+    const d=S.players[ev.turnOf].deck;color=DCOLOR[d];
+    html=`<div class="stage-in d-${d} myturnbanner">${charSVG(d,'bchar')}<div class="banner"><span>Sua vez${!NET.on&&humans().length>1?', '+esc(J(ev.turnOf)):''}!</span></div><div class="caption">Use uma carta se quiser e mova uma peça.</div></div>`;dur=1700;
   }else if(ev.kind==='banner'){
     color=ev.deck?DCOLOR[ev.deck]:color;
     html=`<div class="stage-in ${ev.deck?'d-'+ev.deck:''}"><div class="banner">${ev.html}</div>${ev.sub?`<div class="caption">${esc(ev.sub)}</div>`:''}</div>`;dur=ev.dur||1300;
@@ -2765,7 +2866,7 @@ function act(a,from){
   ui.sel=null;ui.selTrap=null;ui.tgt=null;ui.confirm=null;ui.askMove=null;ui.piece=(S.phase==='chain'&&S.chain&&myTurn())?S.chain.at:null;
   let evs=S.fx.slice();
   if(needPass()){ui.pending=ui.pending.concat(evs);evs=[];}
-  if(a.type==='ready'){const P=S.players[S.current];evs=[{kind:'banner',deck:P.deck,html:`${charSVG(P.deck,'bchar')}Vez ${NET.on?'de':'do'} <span>${esc(J(S.current))}</span>${isBot(S.current)?' · bot':''}`,dur:isBot(S.current)?850:1100}].concat(ui.pending,evs);ui.pending=[];}
+  if(a.type==='ready'){const P=S.players[S.current];evs=[{kind:'banner',turnOf:S.current,deck:P.deck,html:`${charSVG(P.deck,'bchar')}Vez ${NET.on?'de':'do'} <span>${esc(J(S.current))}</span>${isBot(S.current)?' · bot':''}`,dur:isBot(S.current)?850:1100}].concat(ui.pending,evs);ui.pending=[];}
   if(NET.role==='host'&&!e)netSync(evs,a,by);
   render();
   saveGame();
@@ -2895,9 +2996,10 @@ function cardHTML(c,opts={}){
 function render(){
   if(drag.on){drag.pending=true;return;} // não refaz a tela no meio do arraste (no celular isso perdia o toque)
   if(S&&S.names)NAMES=S.names;else if(!S)NAMES=null;
-  if(document.activeElement&&document.activeElement.tagName==='INPUT'&&(ui.screen==='online'||ui.screen==='lobby')&&!ui.forceRender){ui.dirty=true;return;}
+  if(document.activeElement&&document.activeElement.tagName==='INPUT'&&document.activeElement.id!=='chatinput'&&(ui.screen==='online'||ui.screen==='lobby')&&!ui.forceRender){ui.dirty=true;return;}
   applyColors();
   document.body.classList.toggle('ingame',inGame());
+  document.body.classList.toggle('myturn',!!(inGame()&&S&&S.phase!=='over'&&S.phase!=='pass'&&myTurn()&&!(ui.tut&&TUT[ui.tut.i].demo)));
   document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===ui.tab));
   const m=$('main');
   const prev={};let prevCount=0;
@@ -2919,6 +3021,8 @@ function render(){
   const key=bar?JSON.stringify(ui.confirm||ui.sel):null;
   ui.pvKey=key;
   renderOverlay();
+  try{chatRender();}catch(e){}
+  {const sh=document.querySelector('.topzone .sheet.pop'),tz=document.querySelector('.topzone');if(sh&&tz){const r=tz.getBoundingClientRect();sh.style.maxHeight=Math.max(96,r.bottom-4)+'px';}}
   try{window.claude?.hot?.snapshot?.(()=>({S,tab:ui.tab,mode:ui.mode,setup:ui.setup,screen:ui.screen}));}catch(e){}
 }
 
@@ -2937,7 +3041,7 @@ function useCard(uid){
   ui.tgt=uid;ui.sel=null;ui.piece=null;render();
 }
 function startGame(seats,omni){
-  S=newGame({decks:seats.map(x=>x.deck),ctrl:seats.map(x=>x.ctrl),seed:Date.now()&0x7fffffff,omni});
+  S=newGame({decks:seats.map(x=>x.deck),ctrl:seats.map(x=>x.ctrl),seed:Date.now()&0x7fffffff,omni,first:Math.floor(Math.random()*seats.length)});
   ui.screen='game';lastOrient=null;ui.pending=[];ui.orient=0;saveGame();render();tick();window.scrollTo(0,0);}
 
 /* ---------- menu principal ---------- */
@@ -3000,12 +3104,12 @@ function renderLobby(){
   const seat=(st,i)=>{
     const mine=i===me,who=st.kind==='open'?'Vaga livre':st.kind==='bot'?'Bot':esc(st.name||'?');
     const tag=st.kind==='host'?'anfitrião':st.kind==='guest'?(st.off?'sem conexão':'pronto'):st.kind==='bot'?'bot':'esperando…';
-    const deck=st.deck||null;
+    const see=mine||(host&&st.kind==='bot');const deck=see?st.deck||null:null;const hidden=!see&&(st.kind==='guest'||st.kind==='host'||st.kind==='bot');
     const picker=(mine||(host&&st.kind==='bot'))?`<div class="deckgrid mini">${Object.entries(DECKS).map(([k,d])=>`<button class="d-${k}" data-netdeck="${i}:${k}" aria-pressed="${deck===k}" title="${d.name}">${icon(k)}<span>${d.name}</span></button>`).join('')}</div>`:'';
     return `<div class="lseat${mine?' me':''}${st.kind==='open'?' open':''} ${deck?'d-'+deck:''}">
-      <div class="seat-h">${deck&&st.kind!=='open'?charSVG(deck,'schar'):'<span class="token" style="--pc:#777"></span>'}<h3>${who}${mine?' · você':''}<small>${tag}${deck&&!mine&&st.kind!=='open'?' · '+DECKS[deck].name:''}</small></h3>
+      <div class="seat-h">${deck&&st.kind!=='open'?charSVG(deck,'schar'):hidden?'<span class="mystery" aria-hidden="true">?</span>':'<span class="token" style="--pc:#777"></span>'}<h3>${who}${mine?' · você':''}<small>${tag}${deck&&!mine&&st.kind!=='open'?' · '+DECKS[deck].name:''}${hidden?' · classe secreta até começar':''}</small></h3>
       ${host&&(st.kind==='open'||st.kind==='bot')?`<div class="seg small"><button data-netseat="${i}:open" aria-pressed="${st.kind==='open'}">Vaga</button><button data-netseat="${i}:bot" aria-pressed="${st.kind==='bot'}">Bot</button></div>`:''}</div>
-      ${picker}${mine&&deck?`<p class="deckblurb"><b>${charName(deck)} · ${charLine(deck)}:</b> ${DECKS[deck].blurb}</p>`:''}</div>`;};
+      ${picker}${mine&&deck?`<p class="deckblurb"><b>${charName(deck)} · ${charLine(deck)}:</b> ${DECKS[deck].blurb}</p>`:''}${see&&deck?`<button class="btn ghost peekbtn" data-peek="${deck}">Ver as cartas de ${charName(deck)}</button>`:''}</div>`;};
   const link=location.href.split('?')[0].split('#')[0]+'?sala='+L.code;
   const open=L.seats.filter(x=>x.kind==='open').length;
   return `<section class="menu online lobby">
@@ -3026,7 +3130,7 @@ function renderSetup(){
      <div class="seat-h">${charSVG(st.deck,'schar')}<h3>${J(i)}<small>${SEATPOS[n][i]} · peças ${DECKS[st.deck].name.toLowerCase()}</small></h3>
        <div class="seg small" role="group" aria-label="Quem joga"><button data-ctrl="${i}:human" aria-pressed="${st.ctrl==='human'}">Pessoa</button><button data-ctrl="${i}:bot" aria-pressed="${st.ctrl==='bot'}">Bot</button></div></div>
      <div class="deckgrid">${Object.entries(DECKS).map(([k,d])=>`<button class="d-${k}" data-pick="${i}:${k}" aria-pressed="${st.deck===k}">${icon(k)}<span>${d.name}</span></button>`).join('')}</div>
-     <p class="deckblurb"><b>${charName(st.deck)} · ${charLine(st.deck)}:</b> ${DECKS[st.deck].blurb}</p></section>`;
+     <p class="deckblurb"><b>${charName(st.deck)} · ${charLine(st.deck)}:</b> ${DECKS[st.deck].blurb}</p><button class="btn ghost peekbtn" data-peek="${st.deck}">Ver as cartas de ${charName(st.deck)}</button></section>`;
   const nh=seats.filter(x=>x.ctrl==='human').length;
   return `<div class="setupwrap">
     <div class="sub-h"><button class="btn ghost back" id="tomenu">← Menu</button><h2>Jogar offline</h2></div>
@@ -3043,17 +3147,17 @@ function renderSetup(){
 }
 
 /* ---------- jogo ---------- */
+const LOCK='<svg class="lockico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
 function plateHTML(i,mine){
   const s=S,P=s.players[i],cnt=count(s,i),tags=[];
   if(isBot(i))tags.push('<span class="tag bot">bot</span>');
   if(P.out)tags.push('<span class="tag warn">eliminado</span>');
   if(P.skip)tags.push('<span class="tag warn">perde a vez</span>');
-  if(P.silenced>=s.turn&&!P.out)tags.push('<span class="tag warn">silenciado</span>');
   if(P.guardUntil>s.turn&&!P.out)tags.push('<span class="tag" style="color:var(--dk)">guarda real</span>');
   const turn=s.current===i&&s.phase!=='over';
   return `<div class="plate d-${P.deck}${turn?' turn':''}${P.out?' out':''}"><span class="pchar">${charSVG(P.deck)}<span class="token p${i}"></span></span>
     <div class="who"><b>${J(i)}${mine?' · você':''}</b><button class="deckname" data-deckview="${i}" aria-label="Ver o baralho ${DECKS[P.deck].name}">${icon(P.deck)}${DECKS[P.deck].name}<span class="dvhint" aria-hidden="true">›</span></button></div>${tags.join('')}<span class="grow"></span>
-    <div class="stats"><span><b>${cnt}</b> peças</span><span><b>${P.hand.length}</b> ${mine?'cartas':'na mão'}</span>${mine?`<span><b>${P.pile.length}</b> monte</span><span><b>${P.discard.length}</b> descarte</span>`:''}${P.grave&&mine?`<span><b>${P.grave}</b> capturadas</span>`:''}</div>
+    <div class="stats"><span><b>${cnt}</b> peças</span><span class="${P.silenced>=s.turn&&!P.out?'handlock':''}">${P.silenced>=s.turn&&!P.out?LOCK:''}<b>${P.hand.length}</b> ${mine?'cartas':'na mão'}</span>${mine?`<span><b>${P.pile.length}</b> monte</span><span><b>${P.discard.length}</b> descarte</span>`:''}${P.grave&&mine?`<span><b>${P.grave}</b> capturadas</span>`:''}</div>
     ${mine?'':`<span class="backs${P.traps.length?' armed':''}" title="Armadilhas armadas: ${P.traps.length} de 2" aria-label="${P.traps.length?P.traps.length+' armadilha'+(P.traps.length>1?'s':'')+' armada'+(P.traps.length>1?'s':''):'Nenhuma armadilha armada'}">${[0,1].map(k=>`<span class="cback${P.traps[k]?'':' empty'}"></span>`).join('')}<span class="bl">${P.traps.length?P.traps.length+(P.traps.length>1?' armadilhas':' armadilha'):'nenhuma'}</span></span>`}</div>`;
 }
 /* coluna à esquerda do tabuleiro com as informações de quem está jogando neste celular */
@@ -3172,15 +3276,16 @@ function renderGame(){
       ${[0,1].map(k=>V.traps[k]?cardHTML(CARD[s.cards[V.traps[k]]],{button:true,mini:true,micro:true,attr:'trap',uid:V.traps[k],sel:ui.selTrap===V.traps[k]}):'<div class="slot micro">livre</div>').join('')}
       <span class="railnote">só você vê</span></div>`;
     const hand=V.hand.map((u,i)=>cardHTML(CARD[s.cards[u]],{button:true,uid:u,i:(i-mid).toFixed(2),sel:ui.sel===u,dim:!mine||!!cardBlock(s,u),copy:s.cards[u]==='eco'?(V.lastCard?CARD[V.lastCard].name:''):undefined})).join('');
-    handArea=`<div class="handwrap"><span class="handlabel">Sua mão · ${V.hand.length}/5</span>
+    const locked=V.silenced>=s.turn&&!V.out;
+    handArea=`<div class="handwrap${locked?' locked':''}"><span class="handlabel">Sua mão · ${V.hand.length}/5${locked?` <span class="lockchip" title="${V.silenced===s.turn?'Você não pode usar cartas neste turno':'Você não vai poder usar cartas no seu próximo turno'}">${LOCK}${V.silenced===s.turn?'Mão travada':'Travada no próximo turno'}</span>`:''}</span>
      ${V.hand.length?`<div class="hand" id="hand">${hand}</div>`:'<div class="empty-hand">Sem cartas na mão.</div>'}</div>`;}
   else handArea=`<p class="watch">Você está assistindo. As mãos dos bots ficam escondidas.</p>`;
   const others=[];for(let k=1;k<=s.np;k++){const i=(ui.orient+k)%s.np;if(v===null||i!==v)others.push(i);}
   const recent=s.log.map((l,i)=>[l,i]).filter(([l])=>l.to===undefined||l.to===v).slice(-40).reverse().map(([l,i])=>{const c=l.card&&CARD[l.card];
     return `<li class="${c?'withcard':''}"><span class="lt">T${l.t}</span><span class="lbody">${c?`<button class="logchip d-${c.deck} ${c.kind==='armadilha'?'trap':'acao'}" data-log="${i}" aria-label="Ver a carta ${esc(c.name)}">${typeIcon(c.kind)}${esc(c.name)}</button> `:''}${esc(l.text)}</span></li>`;}).join('');
   return `
-   ${ui.tut?coachHTML():''}<div ${ui.tut?'hidden ':''}class="plates compact${others.length===1?' solo':others.length===3?' trio':''}">${others.map(i=>plateHTML(i,false)).join('')}</div>
-   <div class="boardrow">${v!==null?inforail(v):''}<div class="boardwrap" style="--bw:${N>8?'560px':'460px'}"><div class="boardin"><div class="board n${N}${N>8?' big':''}" id="board" style="--n:${N}">${cells}</div>${previewSVG(pv,N,toView,pvColor)}</div>${sheet}</div>${rail}${askPop}</div>
+   <div class="topzone">${ui.tut?coachHTML():''}<div ${ui.tut?'hidden ':''}class="plates compact${others.length===1?' solo':others.length===3?' trio':''}">${others.map(i=>plateHTML(i,false)).join('')}</div>${sheet}</div>
+   <div class="boardrow">${v!==null?inforail(v):''}<div class="boardwrap" style="--bw:${N>8?'560px':'460px'}"><div class="boardin"><div class="board n${N}${N>8?' big':''}" id="board" style="--n:${N}">${cells}</div>${previewSVG(pv,N,toView,pvColor)}</div></div>${rail}${askPop}</div>
    ${handArea}
    <details id="logdet" ${ui.logOpen?'open':''}><summary>Histórico da partida <span class="zhint">· toque numa carta para ver o que ela faz</span></summary><ul class="loglist">${recent}</ul></details>
    <div class="menu-row"><button class="btn ghost" id="quit">Menu / pausar</button><button class="btn ghost" id="gocards">Cartas</button><button class="btn ghost" id="gorules">Regras</button></div>`;
@@ -3206,6 +3311,9 @@ function renderOverlay(){
         :`<p class="hint">Esperando o anfitrião escolher a revanche…</p><div class="ov-row"><button class="btn ghost" id="netleave">Sair da sala</button></div>`}</div></div>`;
   }else if(ui.tut&&ui.tut.show){html=tutOverlayHTML();
   }else if(ui.tutDeck&&ui.screen==='tutclasses'){html=tutDeckHTML();
+  }else if(ui.peek&&!inGame()&&DECKS[ui.peek]){const k=ui.peek,d=DECKS[k];
+    html=`<div class="overlay logmodal deckmodal" id="peekbg"><div class="ov-in d-${k}"><p class="eyebrow">Classe</p><span class="bigchar">${charSVG(k)}</span><h2 class="dv-title">${charName(k)}</h2><p class="dv-char">${icon(k)}${charLine(k)}</p><p class="hint">${d.blurb}</p>
+      <div class="dv-grid">${CARDS.filter(c=>c.deck===k).map(c=>cardHTML(c,{full:true})).join('')}</div><button class="btn primary" id="closepeek">Voltar</button></div></div>`;
   }else if(inGame()&&S.phase==='over'&&!ui.tut){
     const w=S.winner;
     html=`<div class="overlay"><div class="ov-in"><p class="eyebrow">Fim de jogo · turno ${S.turn}</p>
@@ -3301,6 +3409,7 @@ document.addEventListener('click',e=>{
   if(drag.justDropped){drag.justDropped=false;return;}
   if((ui.sel||ui.selTrap)&&!e.target.closest('.sheet')&&!e.target.closest('[data-uid]')&&!e.target.closest('[data-trap]')&&!ui.tgt&&!ui.confirm){ui.sel=null;ui.selTrap=null;render();if(!e.target.closest('button'))return;}
   {const b=e.target.closest('button');if(b&&!b.dataset.r&&!b.dataset.uid&&!b.closest('#sommenu'))SND.play('click');}
+  if(e.target.id==='peekbg'){ui.peek=null;renderOverlay();return;}
   if(e.target.id==='tutdeckbg'){ui.tutDeck=null;renderOverlay();return;}
   if(e.target.id==='deckbg'){ui.deckView=null;renderOverlay();return;}
   if(e.target.id==='logbg'){ui.logView=null;renderOverlay();return;}
@@ -3317,6 +3426,8 @@ document.addEventListener('click',e=>{
   if(t.dataset.mode){ui.mode=+t.dataset.mode;render();return;}
   if(t.dataset.pick){const[i,k]=t.dataset.pick.split(':');ui.setup[ui.mode][+i].deck=k;render();return;}
   if(t.dataset.omni!==undefined){ui.omni=t.dataset.omni==='1';render();return;}
+  if(t.dataset.peek){ui.peek=t.dataset.peek;renderOverlay();return;}
+  if(t.id==='closepeek'){ui.peek=null;renderOverlay();return;}
   if(t.dataset.tutpick){ui.tutPick=t.dataset.tutpick;ui.tutDeck=t.dataset.tutpick;renderOverlay();return;}
   if(t.dataset.join){netJoin(t.dataset.join);return;}
   if(t.dataset.netnp){ui.netNp=+t.dataset.netnp;render();return;}
