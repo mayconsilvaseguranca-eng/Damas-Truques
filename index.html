@@ -2295,7 +2295,8 @@ function netLeave(silent){
 }
 const code4=()=>{const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<4;i++)s+=A[Math.floor(Math.random()*A.length)];return s;};
 const randDeck=()=>{const D=Object.keys(DECKS);return D[Math.floor(Math.random()*D.length)];};
-function randDeckFree(used){const D=Object.keys(DECKS).filter(d=>!used.has(d));const pool=D.length?D:Object.keys(DECKS);return pool[Math.floor(Math.random()*pool.length)];}
+/* sorteio independente: todas as classes têm a mesma chance, inclusive a que outro jogador já tem */
+function randDeckFree(used){const D=Object.keys(DECKS);return D[Math.floor(Math.random()*D.length)];}
 
 /* ---------- anfitrião ---------- */
 function netCreate(np,randAll){
@@ -2379,7 +2380,7 @@ function netSetNp(np){
 }
 function netBeginGame(){
   const L=NET.lobby;
-  // classes sorteadas sem repetir: cada lugar sorteado pega uma classe que ninguém está usando
+  // cada lugar sorteado recebe uma classe com chance igual para as 10
   L.seats.forEach(st=>{if(st.kind==='open')Object.assign(st,{kind:'bot',deck:'random'});if(L.randAll||!st.deck||!DECKS[st.deck])st.deck='random';});
   const used=new Set(L.seats.map(st=>st.deck).filter(d=>d!=='random'));
   L.seats.forEach(st=>{if(st.deck==='random'){st.deck=randDeckFree(used);used.add(st.deck);}});
