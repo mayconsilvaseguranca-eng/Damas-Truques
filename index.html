@@ -882,6 +882,13 @@ table.matrix thead th small{display:block;font-size:.6rem;color:var(--muted)}
 table.matrix thead th .ico{width:16px;height:16px}
 table.matrix td.mx{min-width:30px;text-align:center;padding:5px 2px;border-radius:5px;font-variant-numeric:tabular-nums;font-weight:700;color:var(--fg)}
 table.matrix td.self{color:var(--muted);background:var(--card-lo)}
+/* 2 contra 2: coringa do time e etiqueta de time */
+.pc.jk{outline:2.5px solid #ffc83d;outline-offset:1px;box-shadow:0 0 10px #ffc83dcc}
+.pc .joker{position:absolute;inset:0;margin:auto;width:56%;height:56%;display:flex;align-items:center;justify-content:center;z-index:3;pointer-events:none}
+.pc .joker svg{width:100%;height:100%;fill:#ffc83d;stroke:#3a2600;stroke-width:1.4;filter:drop-shadow(0 1px 1px #0008)}
+.pc .crown~.joker{width:38%;height:38%;left:auto;top:auto;right:-10%;bottom:-10%;margin:0;background:#2a1d05;border-radius:50%;padding:2px}
+.tag.team.t0{background:color-mix(in srgb,#3d8bff 20%,transparent);color:#4f95ff}
+.tag.team.t1{background:color-mix(in srgb,#ff7a3d 22%,transparent);color:#ff8a4f}
 
 /* tema: brinquedo.css */
 /* ===== Tema Brinquedo: amarelo, contornos grossos, cantos redondos ===== */
@@ -1472,7 +1479,9 @@ const shielded=(s,p,pos)=>p.shieldUntil>s.turn||(!!pos&&guarded(s,p,pos));
 const frozen=(s,p)=>p.frozenUntil>s.turn;
 const kingLike=(s,p)=>p.king||s.mods.crown===p.id;
 const alive=s=>s.players.map((P,i)=>i).filter(i=>!s.players[i].out);
-const opps=(s,me=s.current)=>alive(s).filter(i=>i!==me);
+const isFoe=(s,a,b)=>a!==b&&!(s.team&&s.team[a]===s.team[b]);
+const allies=(s,me)=>s.team?alive(s).filter(i=>i!==me&&s.team[i]===s.team[me]):[];
+const opps=(s,me=s.current)=>alive(s).filter(i=>isFoe(s,i,me));
 function forEachPiece(s,fn){for(let r=0;r<s.N;r++)for(let c=0;c<s.N;c++){const p=s.board[r][c];if(p)fn(p,r,c);}}
 function piecesWhere(s,pred){const o=[];forEachPiece(s,(p,r,c)=>{if(pred(p,r,c))o.push([r,c]);});return o;}
 function findPiece(s,id){let f=null;forEachPiece(s,(p,r,c)=>{if(p.id===id)f=[r,c];});return f;}
@@ -1486,7 +1495,11 @@ function emptySquares(s,noTerrain){const o=[];for(let r=0;r<s.N;r++)for(let c=0;
 const adj=(s,[r,c])=>DIAG.map(([a,b])=>[r+a,c+b]).filter(([a,b])=>inB(s,a,b));
 const ownAdj=(s,pos,o)=>adj(s,pos).filter(([a,b])=>{const q=at(s,a,b);return q&&q.owner===o;}).length;
 /* número do próximo turno do jogador o (contando só quem está vivo) */
-function nextTurnOf(s,o){let i=s.current,k=0;for(let g=0;g<s.np*2;g++){i=(i+1)%s.np;if(!s.players[i].out){k++;if(i===o)return s.turn+k;}}return s.turn+s.np;}
+/* 2 contra 2: duplas do mesmo lado, 8 peças cada + 1 coringa do time; turnos em volta da mesa */
+const TEAM2V2={team:[0,0,1,1],order:[0,3,2,1],f:[[-1,0],[-1,0],[1,0],[1,0]],sameSide:true,joker:true};
+const teamWon=(s,i)=>s.winTeam!=null&&s.team?s.team[i]===s.winTeam:s.winner===i;
+function nextSeat(s,i){if(!s.order)return(i+1)%s.np;const k=s.order.indexOf(i);return s.order[(k+1)%s.order.length];}
+function nextTurnOf(s,o){let i=s.current,k=0;for(let g=0;g<s.np*2;g++){i=nextSeat(s,i);if(!s.players[i].out){k++;if(i===o)return s.turn+k;}}return s.turn+s.np;}
 const roundLen=s=>alive(s).length;
 function homeSquares(s,o){for(let k=0;k<3;k++){const out=[];for(let j=0;j<s.N;j++){const[r,c]=ownSq(s,o,k,j);if(freeSq(s,r,c))out.push([r,c]);}if(out.length)return out;}return[];}
 function newPiece(s,o){return{id:s.pid++,owner:o,king:false,shieldUntil:0,frozenUntil:0,doom:0};}
@@ -1506,7 +1519,7 @@ const DECKS={
 const DCOLOR={ataque:'#ef5f3c',defesa:'#4f93ea',distancia:'#4fc07c',trapaceiro:'#b178ea',necromante:'#3fd6c6',arquiteto:'#a3acbf',realeza:'#e2568a',enxame:'#f2a93b',apostador:'#e4dd52',relojoeiro:'#c48a5e'};
 
 /* Desafio: uma peça minha encostada na que acabou de parar pula por cima dela, se a casa atrás estiver livre */
-function desafioMove(s,i,o){const f=i.final;if(!f)return null;const foe=at(s,...f);if(!foe||foe.id!==i.pid||foe.owner===o||shielded(s,foe,f))return null;
+function desafioMove(s,i,o){const f=i.final;if(!f)return null;const foe=at(s,...f);if(!foe||foe.id!==i.pid||!isFoe(s,foe.owner,o)||shielded(s,foe,f))return null;
   for(const [dr,dc] of [[1,1],[1,-1],[-1,1],[-1,-1]]){const q=[f[0]+dr,f[1]+dc],t=[f[0]-dr,f[1]-dc];
     if(!inB(s,...q)||!inB(s,...t))continue;const mine=at(s,...q);if(!mine||mine.owner!==o||frozen(s,mine))continue;
     if(at(s,...t)||wallAt(s,...t))continue;return{from:q,foe:f,to:t};}
@@ -1540,7 +1553,7 @@ const CARDS=[
    apply(s){s.mods.fury=true;return 'Se capturar neste turno, joga de novo. Se não, compra 1 carta.';}},
   {id:'estocada',deck:'ataque',name:'Estocada',kind:'acao',n:1,alvo:'Peça inimiga',
    text:'Remove uma peça inimiga encostada (na diagonal) numa peça sua.',
-   targets(s){const me=s.current;return piecesWhere(s,(p,r,c)=>p.owner!==me&&!shielded(s,p,[r,c])&&ownAdj(s,[r,c],me)>=1);},
+   targets(s){const me=s.current;return piecesWhere(s,(p,r,c)=>isFoe(s,p.owner,me)&&!shielded(s,p,[r,c])&&ownAdj(s,[r,c],me)>=1);},
    apply(s,pos){removePiece(s,pos);return `A peça inimiga em ${sq(s,pos)} foi eliminada.`;}},
   {id:'promocao',deck:'ataque',name:'Promoção Antecipada',kind:'acao',n:2,alvo:'Sua peça',
    text:'Uma peça comum sua que já passou da metade do tabuleiro vira dama.',
@@ -1566,11 +1579,11 @@ const CARDS=[
    text:'Escolha uma peça sua. Ela não pode ser capturada até o seu próximo turno, e as peças inimigas encostadas nela ficam congeladas no próximo turno delas.',
    targets(s){return piecesWhere(s,(p,r,c)=>p.owner===s.current);},
    apply(s,pos){const me=s.current,p=at(s,...pos);p.shieldUntil=nextTurnOf(s,me);let n=0;const sqs=[pos];
-     adj(s,pos).forEach(([a,b])=>{const q=at(s,a,b);if(q&&q.owner!==me){q.frozenUntil=nextTurnOf(s,q.owner)+1;n++;sqs.push([a,b]);}});s._squares=sqs;
+     adj(s,pos).forEach(([a,b])=>{const q=at(s,a,b);if(q&&isFoe(s,q.owner,me)){q.frozenUntil=nextTurnOf(s,q.owner)+1;n++;sqs.push([a,b]);}});s._squares=sqs;
      return `A peça em ${sq(s,pos)} está entrincheirada${n?` e ${n} peça${n>1?'s inimigas ficaram congeladas':' inimiga ficou congelada'}`:''}.`;}},
   {id:'sentinela',deck:'defesa',name:'Sentinela',kind:'armadilha',n:1,alvo:'Dispara sozinha',trigger:'move',
    text:'Quando uma peça inimiga terminar a jogada encostada numa peça sua, ela fica congelada no próximo turno dela e você compra 1 carta.',
-   when:(s,i,o)=>{const p=at(s,...i.final);return p&&p.id===i.pid&&p.owner!==o&&ownAdj(s,i.final,o)>=1;},
+   when:(s,i,o)=>{const p=at(s,...i.final);return p&&p.id===i.pid&&isFoe(s,p.owner,o)&&ownAdj(s,i.final,o)>=1;},
    fire(s,i,o){const q=at(s,...i.final);if(q)q.frozenUntil=nextTurnOf(s,q.owner)+1;draw(s,o);return{text:`A sentinela congelou a peça em ${sq(s,i.final)}.`,squares:[i.final]};}},
   {id:'sempressa',deck:'defesa',name:'Sem Pressa',kind:'acao',n:1,alvo:'Nenhum',
    text:'Compre 1 carta. Neste turno, a captura deixa de ser obrigatória.',
@@ -1611,14 +1624,14 @@ const CARDS=[
   // TRAPACEIRO
   {id:'congelar',deck:'trapaceiro',name:'Congelar',kind:'acao',n:3,alvo:'Peça inimiga',
    text:'A peça inimiga escolhida não pode se mover no próximo turno do dono dela.',
-   targets(s){return piecesWhere(s,p=>p.owner!==s.current);},
+   targets(s){return piecesWhere(s,p=>isFoe(s,p.owner,s.current));},
    apply(s,pos){const p=at(s,...pos);p.frozenUntil=nextTurnOf(s,p.owner)+1;return `A peça em ${sq(s,pos)} fica congelada no próximo turno do ${J(p.owner)}.`;}},
   {id:'silencio',deck:'trapaceiro',name:'Silêncio',kind:'acao',n:2,alvo:'Um oponente',pickOpp:true,
    text:'Compre 1 carta. Um oponente não pode usar nem armar cartas no próximo turno dele.',
    apply(s,t,d,o){s.players[o].silenced=nextTurnOf(s,o);draw(s,s.current);return `Comprou 1 carta. O ${J(o)} não pode usar cartas no próximo turno.`;}},
   {id:'empurrao',deck:'trapaceiro',name:'Empurrão',kind:'acao',n:1,alvo:'Peça inimiga + casa',
    text:'Empurra uma peça inimiga uma casa na diagonal de volta para o lado dela. Ela fica exposta: se der, você pode capturá-la logo em seguida.',
-   targets(s){return piecesWhere(s,(p,r,c)=>p.owner!==s.current&&!shielded(s,p,[r,c])&&this.dests(s,[r,c]).length>0);},
+   targets(s){return piecesWhere(s,(p,r,c)=>isFoe(s,p.owner,s.current)&&!shielded(s,p,[r,c])&&this.dests(s,[r,c]).length>0);},
    dests(s,[r,c]){const f=FW(s,at(s,r,c).owner),pp=perp(f),me=s.current;return[[r-f[0]+pp[0],c-f[1]+pp[1]],[r-f[0]-pp[0],c-f[1]-pp[1]]].filter(([a,b])=>{if(!inB(s,a,b)||wallAt(s,a,b))return false;const q=at(s,a,b);return freeSq(s,a,b);});},
    apply(s,[r,c],[r2,c2]){const p=at(s,r,c);
      s.board[r2][c2]=p;s.board[r][c]=null;return `A peça inimiga foi empurrada de ${sq(s,[r,c])} para ${sq(s,[r2,c2])}.`;}},
@@ -1642,7 +1655,7 @@ const CARDS=[
   {id:'pacto',deck:'necromante',name:'Pacto Sombrio',kind:'acao',n:2,alvo:'Sua peça + peça inimiga',
    text:'Sacrifica uma peça sua para remover uma peça comum inimiga a até 2 casas dela.',
    targets(s){return piecesWhere(s,(p,r,c)=>p.owner===s.current&&this.dests(s,[r,c]).length>0);},
-   dests(s,pos){const me=s.current;return piecesWhere(s,(p,r,c)=>p.owner!==me&&!p.king&&!shielded(s,p,[r,c])&&cheb(pos,[r,c])<=2);},
+   dests(s,pos){const me=s.current;return piecesWhere(s,(p,r,c)=>isFoe(s,p.owner,me)&&!p.king&&!shielded(s,p,[r,c])&&cheb(pos,[r,c])<=2);},
    apply(s,a,b){removePiece(s,a);removePiece(s,b,true);return `A peça em ${sq(s,a)} foi sacrificada e levou junto a peça em ${sq(s,b)}.`;}},
   {id:'colheita',deck:'necromante',name:'Colheita',kind:'acao',n:3,alvo:'Nenhum',
    text:'Compre 2 cartas. Se alguma peça sua foi capturada desde o seu último turno, compre 3.',
@@ -1662,7 +1675,7 @@ const CARDS=[
    text:'Uma casa vazia vira gelo por 2 rodadas: quem parar nela escorrega mais uma casa. As peças inimigas encostadas nela ficam congeladas no próximo turno delas.',
    targets(s){return emptySquares(s,true);},
    apply(s,[r,c]){const t={type:'ice',r,c,until:s.turn+2*roundLen(s)};s.terrain.push(t);s._created.push(t);let n=0;
-     adj(s,[r,c]).forEach(([a,b])=>{const q=at(s,a,b);if(q&&q.owner!==s.current){q.frozenUntil=nextTurnOf(s,q.owner)+1;n++;}});
+     adj(s,[r,c]).forEach(([a,b])=>{const q=at(s,a,b);if(q&&isFoe(s,q.owner,s.current)){q.frozenUntil=nextTurnOf(s,q.owner)+1;n++;}});
      return `A casa ${sq(s,[r,c])} congelou por 2 rodadas`+(n?` e ${n} peça${n>1?'s inimigas ficaram congeladas':' inimiga ficou congelada'}.`:'.');}},
   {id:'ponte',deck:'arquiteto',name:'Ponte',kind:'acao',n:1,alvo:'Nenhum',
    text:'Compre 1 carta. Neste turno, suas peças podem pular por cima de uma peça sua para a frente, sem capturar.',
@@ -1674,7 +1687,7 @@ const CARDS=[
    apply(s,[r,c],[r2,c2]){const t={type:'portal',r,c,r2,c2,until:s.turn+2*roundLen(s)};s.terrain.push(t);s._created.push(t);draw(s,s.current);return `Comprou 1 carta. Portal aberto entre ${sq(s,[r,c])} e ${sq(s,[r2,c2])}.`;}},
   {id:'soterrar',deck:'arquiteto',name:'Soterrar',kind:'acao',n:3,alvo:'Peça inimiga',
    text:'Remove uma peça inimiga encostada numa muralha, num gelo ou num portal.',
-   targets(s){const me=s.current;return piecesWhere(s,(p,r,c)=>p.owner!==me&&!shielded(s,p,[r,c])&&adj(s,[r,c]).some(([a,b])=>wallAt(s,a,b)||terrainAt(s,a,b)));},
+   targets(s){const me=s.current;return piecesWhere(s,(p,r,c)=>isFoe(s,p.owner,me)&&!shielded(s,p,[r,c])&&adj(s,[r,c]).some(([a,b])=>wallAt(s,a,b)||terrainAt(s,a,b)));},
    apply(s,pos){removePiece(s,pos);return `A peça em ${sq(s,pos)} foi soterrada.`;}},
   {id:'fosso',deck:'arquiteto',name:'Fosso',kind:'armadilha',n:3,alvo:'Casa vazia (escondida)',trigger:'move',
    text:'Escolha uma casa vazia em segredo. A peça inimiga que terminar a jogada nela cai e é destruída.',
@@ -1752,9 +1765,9 @@ const CARDS=[
      return `${n} oponente${n===1?'':'s'} descartou 1 carta. ${J(s.current)} comprou 2.`;}},
   {id:'roleta',deck:'apostador',name:'Roleta',kind:'acao',n:2,
    alvo:'Sua peça',text:'Escolha uma peça sua. Ela troca de lugar com uma peça inimiga sorteada.',
-   can:s=>piecesWhere(s,p=>p.owner!==s.current).length>0,
+   can:s=>piecesWhere(s,p=>isFoe(s,p.owner,s.current)).length>0,
    targets(s){return piecesWhere(s,p=>p.owner===s.current);},
-   apply(s,a){const me=s.current,b=pick(s,piecesWhere(s,p=>p.owner!==me));
+   apply(s,a){const me=s.current,b=pick(s,piecesWhere(s,p=>isFoe(s,p.owner,me)));
      const pa=at(s,...a);s.board[a[0]][a[1]]=at(s,...b);s.board[b[0]][b[1]]=pa;s._squares=[a,b];return `As peças em ${sq(s,a)} e ${sq(s,b)} trocaram de lugar.`;}},
   {id:'azar',deck:'apostador',name:'Azar',kind:'armadilha',n:3,alvo:'Dispara sozinha',trigger:'card',
    text:'Quando um oponente usar uma carta de ação, jogue uma moeda. Cara: ela é anulada. Coroa: você compra 1 carta.'},
@@ -1778,19 +1791,29 @@ const CARDS=[
    fire(s){const o=s.current;s.players[o].skip=true;return{text:`O ${J(o)} vai perder o próximo turno.`,squares:[]};}}
 ];
 const CARD=Object.fromEntries(CARDS.map(c=>[c.id,c]));
-function cercoSet(s){const me=s.current;return piecesWhere(s,(p,r,c)=>p.owner!==me&&!shielded(s,p,[r,c])&&piecesWhere(s,(q,a,b)=>q.owner===me&&cheb([a,b],[r,c])<=2).length>=3);}
+function cercoSet(s){const me=s.current;return piecesWhere(s,(p,r,c)=>isFoe(s,p.owner,me)&&!shielded(s,p,[r,c])&&piecesWhere(s,(q,a,b)=>q.owner===me&&cheb([a,b],[r,c])<=2).length>=3);}
 function falangeSet(s){const me=s.current;return piecesWhere(s,(p,r,c)=>p.owner===me&&ownAdj(s,[r,c],me)>0);}
 
 /* ---------- partida ---------- */
 function newGame(opts){
   const np=opts.decks.length,G=SEATS[np];
-  const s={v:4,rules:{omni:!!opts.omni},discarded:false,np,N:G.N,parity:G.parity,f:G.f,seed:opts.seed|0,turn:1,current:0,phase:'pass',players:[],cards:{},owner:{},trapData:{},uid:1,pid:1,board:[],walls:[],terrain:[],
+  const s={v:4,team:opts.team||null,order:opts.order||null,rules:{omni:!!opts.omni},discarded:false,np,N:G.N,parity:G.parity,f:G.f,seed:opts.seed|0,turn:1,current:0,phase:'pass',players:[],cards:{},owner:{},trapData:{},uid:1,pid:1,board:[],walls:[],terrain:[],
     mods:{},cardPlayed:false,moved:false,furyUsed:false,extra:false,chain:null,last:null,lastMove:null,log:[],fx:[],delayed:[],quiet:0,winner:null,reason:'',_created:[]};
   for(let r=0;r<s.N;r++)s.board.push(Array(s.N).fill(null));
+  if(opts.f)s.f=opts.f;
   opts.decks.forEach((d,i)=>{
     /* no jogo de 3, o Jogador 3 começa com 1 peça a menos para compensar a posição (ver testes) */
     let skip=(G.handicap&&G.handicap[i])||0;
-    for(let k=0;k<G.ranks;k++)for(let j=G.files[0];j<=G.files[1];j++){const[r,c]=ownSq(s,i,k,j);if(isDark(s,r,c)){if(skip){skip--;continue;}s.board[r][c]=newPiece(s,i);}}
+    /* modo coringa (2x2): cada um tem 8 peças; o 1º do time tem a peça do meio da fileira de trás como coringa do time */
+    const jk=opts.joker&&s.team,lead=jk&&s.team.indexOf(s.team[i])===i,sqs=[];
+    for(let k=0;k<G.ranks;k++)for(let j=G.files[0];j<=G.files[1];j++){const[r,c]=ownSq(s,i,k,j);if(isDark(s,r,c))sqs.push([r,c,k]);}
+    const back=sqs.filter(q=>q[2]===0),mid=back[Math.floor(back.length/2)];
+    if(opts.sameSide){/* dupla do mesmo lado: 17 casas escuras das 3 fileiras de trás; metade para cada, coringa no centro */
+      for(let k=0;k<3;k++)for(let j=0;j<s.N;j++){const[r,c]=ownSq(s,i,k,j);if(!isDark(s,r,c))continue;const ctr=j===(s.N>>1);
+        if(ctr){if(lead){const pc=newPiece(s,i);if(opts.joker)pc.shared=true;s.board[r][c]=pc;}continue;}
+        if((j<(s.N>>1))===lead)s.board[r][c]=newPiece(s,i);}
+    }else
+    for(const q of sqs){const[r,c]=q;if(jk&&q===mid&&!lead)continue;if(skip){skip--;continue;}const np2=newPiece(s,i);if(jk&&q===mid&&lead)np2.shared=true;s.board[r][c]=np2;}
     const pile=[];CARDS.filter(c=>c.deck===d).forEach(c=>{for(let k=0;k<c.n;k++){const u='c'+(s.uid++);s.cards[u]=c.id;s.owner[u]=i;pile.push(u);}});
     shuffle(s,pile);
     s.players.push({deck:d,ctrl:(opts.ctrl&&opts.ctrl[i])||'human',lvl:(opts.lvl&&opts.lvl[i])||2,pile,hand:[],traps:[],discard:[],silenced:0,grave:0,lost:0,lostMark:0,lostRecent:0,kingsLost:0,lastCard:null,out:false,skip:false});
@@ -1821,20 +1844,20 @@ function captureSteps(s,r,c){
       let rr=r+dr,cc=c+dc;
       while(inB(s,rr,cc)&&!at(s,rr,cc)&&!wallAt(s,rr,cc)){rr+=dr;cc+=dc;}
       if(!inB(s,rr,cc)||wallAt(s,rr,cc))continue;
-      const t=at(s,rr,cc);if(!t||t.owner===p.owner||shielded(s,t,[rr,cc]))continue;
+      const t=at(s,rr,cc);if(!t||!isFoe(s,t.owner,p.owner)||shielded(s,t,[rr,cc]))continue;
       let lr=rr+dr,lc=cc+dc;
       while(inB(s,lr,lc)&&!at(s,lr,lc)&&!wallAt(s,lr,lc)){res.push({from:[r,c],to:[lr,lc],cap:[rr,cc]});lr+=dr;lc+=dc;}
     }else{
       const rr=r+dr,cc=c+dc,lr=r+2*dr,lc=c+2*dc;
       if(!inB(s,lr,lc))continue;
       const t=at(s,rr,cc);
-      if(t&&t.owner!==p.owner&&!shielded(s,t,[rr,cc])&&!at(s,lr,lc)&&!wallAt(s,lr,lc))res.push({from:[r,c],to:[lr,lc],cap:[rr,cc]});
+      if(t&&isFoe(s,t.owner,p.owner)&&!shielded(s,t,[rr,cc])&&!at(s,lr,lc)&&!wallAt(s,lr,lc))res.push({from:[r,c],to:[lr,lc],cap:[rr,cc]});
     }
   }
   return res;
 }
 function simpleSteps(s,r,c){
-  const p=at(s,r,c),res=[],f=FW(s,p.owner),pp=perp(f),ok=(a,b)=>freeSq(s,a,b),mv=(a,b)=>res.push({from:[r,c],to:[a,b],cap:null});
+  const p=at(s,r,c),res=[],f=FW(s,p.shared?s.current:p.owner),pp=perp(f),ok=(a,b)=>freeSq(s,a,b),mv=(a,b)=>res.push({from:[r,c],to:[a,b],cap:null});
   if(kingLike(s,p)){for(const[dr,dc]of DIAG){let a=r+dr,b=c+dc;while(ok(a,b)){mv(a,b);a+=dr;b+=dc;}}return res;}
   for(const sgn of[-1,1]){
     const dr=f[0]+sgn*pp[0],dc=f[1]+sgn*pp[1];
@@ -1846,10 +1869,11 @@ function simpleSteps(s,r,c){
   }
   return res;
 }
+const canMove=(s,p)=>p.owner===s.current||(p.shared&&s.team&&s.team[p.owner]===s.team[s.current]);
 function legalMoves(s,ignoreFreeze){
   if(s.chain&&s.phase==='chain')return captureSteps(s,...s.chain.at);
   const caps=[],simp=[];
-  forEachPiece(s,(p,r,c)=>{if(p.owner!==s.current)return;if(!ignoreFreeze&&frozen(s,p))return;if(s.mods.onlyPid&&p.id!==s.mods.onlyPid)return;caps.push(...captureSteps(s,r,c));simp.push(...simpleSteps(s,r,c));});
+  forEachPiece(s,(p,r,c)=>{if(!canMove(s,p))return;if(!ignoreFreeze&&frozen(s,p))return;if(s.mods.onlyPid&&p.id!==s.mods.onlyPid)return;caps.push(...captureSteps(s,r,c));simp.push(...simpleSteps(s,r,c));});
   if(caps.length&&!s.mods.noForce)return caps;
   return caps.concat(simp);
 }
@@ -1978,9 +2002,10 @@ function finishMove(s){
 function count(s,o){let n=0;forEachPiece(s,p=>{if(p.owner===o)n++;});return n;}
 function material(s,o){let v=0;forEachPiece(s,p=>{if(p.owner===o)v+=p.king?2:1;});return v;}
 function checkWin(s){
-  for(const i of alive(s)){let n=0;forEachPiece(s,p=>{if(p.owner===i)n++;});
+  for(const i of alive(s)){let n=0;forEachPiece(s,p=>{if(p.owner===i||(p.shared&&s.team[p.owner]===s.team[i]))n++;});
     if(!n){s.players[i].out=true;log(s,`${J(i)} foi eliminado.`);if(s.np>2)fx(s,{kind:'banner',html:`${J(i)} <span>eliminado</span>`,dur:1600});}}
   const al=alive(s);
+  if(s.team&&al.length>=1&&al.every(i=>s.team[i]===s.team[al[0]])){s.winner=al[0];s.winTeam=s.team[al[0]];s.reason=`O Time ${s.winTeam+1} eliminou a outra dupla.`;s.phase='over';return true;}
   if(al.length>1)return false;
   s.winner=al.length?al[0]:null;s.reason=al.length?(s.np>2?'Foi o último jogador de pé.':'Capturou todas as peças do oponente.'):'Ninguém sobrou no tabuleiro.';s.phase='over';return true;
 }
@@ -1994,7 +2019,7 @@ function endTurn(s){
   if(s.mods&&s.mods.fury&&!s.furyUsed&&!s.players[s.current].out){draw(s,s.current);log(s,`${J(s.current)} não capturou com a Fúria e comprou 1 carta.`,undefined,'furia');}
   for(let guard=0;guard<12;guard++){
     s.turn++;s.quiet++;
-    let i=s.current;do{i=(i+1)%s.np;}while(s.players[i].out);
+    let i=s.current;do{i=nextSeat(s,i);}while(s.players[i].out);
     s.current=i;s.mods={};s.cardPlayed=false;s.discarded=false;s.moved=false;s.furyUsed=false;s.extra=false;s.chain=null;
     s.walls=s.walls.filter(w=>w.until>s.turn);s.terrain=s.terrain.filter(t=>t.until>s.turn);
     // Marca da Morte
@@ -2017,6 +2042,8 @@ function endTurn(s){
   endByMaterial(s);
 }
 function endByMaterial(s){
+  if(s.team){const tm={};alive(s).forEach(i=>tm[s.team[i]]=(tm[s.team[i]]||0)+material(s,i));const ks=Object.keys(tm),best=Math.max(...ks.map(k=>tm[k])),w=ks.filter(k=>tm[k]===best);
+    s.phase='over';if(w.length===1){s.winTeam=+w[0];s.winner=alive(s).find(i=>s.team[i]===+w[0]);s.reason='Material do time.';}else{s.winner=null;s.reason='Empate de material.';}return;}
   const al=alive(s),m=al.map(i=>material(s,i)),best=Math.max(...m),w=al.filter((i,k)=>m[k]===best);
   s.phase='over';
   if(w.length===1){s.winner=w[0];s.reason=`Muito tempo sem capturas. Venceu quem tinha mais material (dama vale 2): ${al.map((i,k)=>`${J(i)} ${m[k]}`).join(', ')}.`;}
@@ -2055,13 +2082,13 @@ function clone(s){
 function threatOn(s,me){
   // maior valor que o próximo jogador consegue capturar de mim
   const al=alive(s);if(al.length<2)return 0;
-  let n=me;do{n=(n+1)%s.np;}while(s.players[n].out);
+  let n=me;do{n=nextSeat(s,n);}while(s.players[n].out);
   const t=clone(s);t.current=n;t.turn=s.turn+1;t.mods={};t.chain=null;t.phase='play';
   const caps=legalMoves(t).filter(m=>m.cap);if(!caps.length)return 0;
   let best=0;
   const dfs=(st,val,depth)=>{const ms=st.phase==='chain'?captureSteps(st,...st.chain.at):legalMoves(st).filter(m=>m.cap);
     if(!ms.length||depth>6){best=Math.max(best,val);return;}
-    for(const m of ms.slice(0,8)){const c=clone(st),cp=at(c,...m.cap);const v=cp.owner===me?(cp.king?2.4:1):0;
+    for(const m of ms.slice(0,8)){const c=clone(st),cp=at(c,...m.cap);const v=!isFoe(st,cp.owner,me)?(cp.king?2.4:1):0;
       c.board[m.to[0]][m.to[1]]=at(c,...m.from);c.board[m.from[0]][m.from[1]]=null;c.board[m.cap[0]][m.cap[1]]=null;
       c.chain={at:m.to,caps:[]};c.phase='chain';dfs(c,val+v,depth+1);}};
   dfs(t,0,0);return best;
@@ -2073,9 +2100,9 @@ function evaluate(s,me){
   forEachPiece(s,(p,r,c)=>{if(val[p.owner]===undefined)return;let v=p.king?2.6:1+0.035*rankOf(s,p.owner,[r,c]);if(p.doom)v*=.3;val[p.owner]+=v;});
   const P=s.players[me];
   const others=opps(s,me);
-  let sc=val[me]+0.22*P.hand.length+0.32*P.traps.length+(P.skip?-1.2:0);
+  let sc=val[me]+allies(s,me).reduce((a,i)=>a+val[i],0)+0.22*P.hand.length+0.32*P.traps.length+(P.skip?-1.2:0);
   if(others.length){const ov=others.map(o=>val[o]+0.12*s.players[o].hand.length+0.15*s.players[o].traps.length+(s.players[o].skip?-1:0));
-    sc-=s.np===2?ov[0]:0.5*Math.max(...ov)+0.5*ov.reduce((a,b)=>a+b,0)/ov.length;}
+    sc-=(s.np===2||s.team)?ov.reduce((a,b)=>a+b,0)/(s.team?1:1):0.5*Math.max(...ov)+0.5*ov.reduce((a,b)=>a+b,0)/ov.length;}
   sc-=0.85*threatOn(s,me);
   return sc;
 }
@@ -2086,7 +2113,7 @@ function evalFast(s,me){
   if(s.players[me].out)return -900;
   const val={};alive(s).forEach(i=>val[i]=0);
   forEachPiece(s,(p,r,c)=>{if(val[p.owner]===undefined)return;let v=p.king?2.6:1+0.035*rankOf(s,p.owner,[r,c]);if(p.doom)v*=.3;val[p.owner]+=v;});
-  const ov=opps(s,me).map(o=>val[o]);return val[me]-(ov.length?(s.np===2?ov[0]:0.5*Math.max(...ov)+0.5*ov.reduce((a,b)=>a+b,0)/ov.length):0);
+  const ov=opps(s,me).map(o=>val[o]);return val[me]+allies(s,me).reduce((a,i)=>a+val[i],0)-(ov.length?((s.np===2||s.team)?ov.reduce((a,b)=>a+b,0):0.5*Math.max(...ov)+0.5*ov.reduce((a,b)=>a+b,0)/ov.length):0);
 }
 /* melhor sequência de movimentos do jogador da vez, devolvendo o estado final (resposta do oponente) */
 function replySeq(s,who,depth=0){
@@ -2099,7 +2126,8 @@ function replySeq(s,who,depth=0){
 }
 /* todas as sequências de movimento do jogador da vez (capturas em cadeia incluídas), até um limite */
 function allSeqs(s,who,depth=0,out=[]){
-  const ms=legalMoves(s);if(!ms.length){out.push(s);return out;}
+  let ms=legalMoves(s);if(!ms.length){out.push(s);return out;}
+  if(ms.length>28)ms=sample(ms,ms.length);/* sem viés da ordem das casas quando passa do limite */
   for(const m of ms){if(out.length>=28)break;const c=clone(s);doMove(c,m.from,m.to);
     if(c.phase==='chain'||(c.phase==='play'&&c.current===who&&depth<3))allSeqs(c,who,depth+1,out);else out.push(c);}
   return out;
@@ -2323,7 +2351,7 @@ function netResumeHost(){
   if(S){NAMES=S.names||null;lastOrient=null;ui.pending=[];}
   netHostStart();if(S)tick();
 }
-function netRoomInfo(){const L=NET.lobby;return{code:NET.code,name:L.seats[0].name,np:L.np,taken:L.seats.filter(x=>x.kind==='host'||x.kind==='guest').length,
+function netRoomInfo(){const L=NET.lobby;return{code:NET.code,name:L.seats[0].name,np:L.np,team:!!(L.team&&L.np===4),taken:L.seats.filter(x=>x.kind==='host'||x.kind==='guest').length,
   open:L.seats.filter(x=>x.kind==='open').length,status:L.status,randAll:!!L.randAll,ts:Date.now()};}
 /* a classe de cada um fica escondida na sala até a partida começar */
 function netLobbyPublic(keepSeat){const L=NET.lobby;return {...L,seats:L.seats.map((st,i)=>i===keepSeat||L.status!=='lobby'?st:{...st,deck:null,picked:!!st.deck})};}
@@ -2386,7 +2414,7 @@ function netBeginGame(){
   L.seats.forEach(st=>{if(st.deck==='random'){st.deck=randDeckFree(used);used.add(st.deck);}});
   const names=L.seats.map((st,i)=>st.kind==='bot'?'Bot '+(i+1):st.name);
   NAMES=names;
-  S=newGame({decks:L.seats.map(x=>x.deck||randDeck()),ctrl:L.seats.map(x=>x.kind==='host'?'human':x.kind==='guest'?'remote':'bot'),seed:Date.now()&0x7fffffff,omni:L.omni,lvl:L.seats.map(x=>x.lvl||2),first:Math.floor(Math.random()*L.seats.length)});
+  S=newGame({decks:L.seats.map(x=>x.deck||randDeck()),ctrl:L.seats.map(x=>x.kind==='host'?'human':x.kind==='guest'?'remote':'bot'),seed:Date.now()&0x7fffffff,omni:L.omni,lvl:L.seats.map(x=>x.lvl||2),first:Math.floor(Math.random()*L.seats.length),...(L.team&&L.np===4?TEAM2V2:{})});
   S.names=names;NAMES=names;
   L.status='jogando';ui.screen='game';lastOrient=null;ui.pending=[];ui.orient=0;
   lsSet('damas-deck',L.seats[0].deck);
@@ -2899,6 +2927,10 @@ function saveGame(){if(NET.on||ui.tut)return;try{if(S&&S.phase!=='over')localSto
 function loadSaved(){try{const t=localStorage.getItem('damas-partida');if(!t)return null;const g=JSON.parse(t);return g&&g.v===4&&g.phase!=='over'?g:null;}catch(e){return null;}}
 const SEATNAME=['Marfim','Carmim','Cobalto','Jade'];
 const SEATPOS={2:['embaixo','em cima'],3:['embaixo','à esquerda','à direita'],4:['embaixo','à esquerda','em cima','à direita']};
+const TEAMPOS=['Time 1 · embaixo, à esquerda','Time 1 · embaixo, à direita','Time 2 · em cima, à direita','Time 2 · em cima, à esquerda'];
+const teamName=t=>'Time '+(t+1);
+/* nome de quem venceu: no 2 contra 2 é a dupla */
+function winnerLabel(s,lab){if(s.team&&s.winTeam!=null){const ps=s.players.map((P,i)=>i).filter(i=>s.team[i]===s.winTeam);return `${teamName(s.winTeam)} (${ps.map(lab).join(' e ')})`;}return lab(s.winner);}
 let ui={screen:'menu',tab:'jogar',mode:2,setup:{2:[{deck:'ataque',ctrl:'human'},{deck:'trapaceiro',ctrl:'human'}],3:[{deck:'realeza',ctrl:'human'},{deck:'necromante',ctrl:'bot'},{deck:'arquiteto',ctrl:'bot'}],4:[{deck:'distancia',ctrl:'human'},{deck:'ataque',ctrl:'bot'},{deck:'necromante',ctrl:'bot'},{deck:'relojoeiro',ctrl:'bot'}]},
   sel:null,selTrap:null,piece:null,tgt:null,quit:false,pending:[],orient:0};
 let lastOrient=null;
@@ -2999,7 +3031,7 @@ function act(a,from){
   render();
   saveGame();
   if(ui.tut)tutAfter(a,e,by);
-  if(S.phase==='over'&&!e&&!ui.tut){setTimeout(()=>FX.confetti(),300);const v=viewer();SND.play(S.winner!==null&&(v===null||S.winner===v||humans().length>1)?'win':'lose');}
+  if(S.phase==='over'&&!e&&!ui.tut){setTimeout(()=>FX.confetti(),300);const v=viewer();SND.play(S.winner!==null&&(v===null||teamWon(S,v)||humans().length>1)?'win':'lose');}
   if(evs.length)requestAnimationFrame(()=>setTimeout(()=>enqueueFx(evs),a.type==='move'?220:0));
   else tick();
 }
@@ -3172,15 +3204,15 @@ function useCard(uid){
   if(!e.targets&&!(e.pickOpp&&S.np>2)){act({type:'play',uid});return;}
   ui.tgt=uid;ui.sel=null;ui.piece=null;render();
 }
-function startGame(seats,omni){
+function startGame(seats,omni,team){
   {const used=new Set(seats.map(x=>x.deck).filter(d=>DECKS[d]));seats=seats.map(x=>{if(x.deck!=='random'&&DECKS[x.deck])return x;const d=randDeckFree(used);used.add(d);return{...x,deck:d};});}
-  S=newGame({decks:seats.map(x=>x.deck),ctrl:seats.map(x=>x.ctrl),seed:Date.now()&0x7fffffff,omni,lvl:seats.map(x=>x.lvl||2),first:Math.floor(Math.random()*seats.length)});
+  S=newGame({decks:seats.map(x=>x.deck),ctrl:seats.map(x=>x.ctrl),seed:Date.now()&0x7fffffff,omni,lvl:seats.map(x=>x.lvl||2),first:Math.floor(Math.random()*seats.length),...(team&&seats.length===4?TEAM2V2:{})});
   ui.screen='game';lastOrient=null;ui.pending=[];ui.orient=0;saveGame();render();tick();window.scrollTo(0,0);}
 
 /* ---------- menu principal ---------- */
 function renderMenu(){
   const saved=S&&S.phase!=='over'?S:loadSaved();
-  const desc=g=>`${g.np} jogadores · turno ${g.turn} · ${g.players.map(P=>DECKS[P.deck].name).join(' x ')}`;
+  const desc=g=>`${g.team?'2 contra 2':g.np+' jogadores'} · turno ${g.turn} · ${g.players.map(P=>DECKS[P.deck].name).join(' x ')}`;
   const ICO={play:'<path d="M7 4l13 8-13 8z"/>',bolt:'<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><circle cx="17" cy="9" r="2.6"/><path d="M16.5 14.6c2.6.2 4.4 1.9 5 4.9"/>',book:'<path d="M4 5.5C4 4.7 4.7 4 5.5 4H11v16H5.5C4.7 20 4 19.3 4 18.5z"/><path d="M20 5.5c0-.8-.7-1.5-1.5-1.5H13v16h5.5c.8 0 1.5-.7 1.5-1.5z"/>',globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.8 3.8 5.8 3.8 9S14.6 18.2 12 21M12 3C9.4 5.8 8.2 8.8 8.2 12s1.2 6.2 3.8 9"/>'};
   const ic=k=>`<svg class="mi-ico" viewBox="0 0 24 24" aria-hidden="true">${ICO[k]}</svg>`;
   const dots=Object.keys(DECKS).map(d=>charSVG(d,'mchar')).join('');
@@ -3213,7 +3245,7 @@ function renderOnline(){
   let gh=null,gg=null;try{gh=JSON.parse(lsGet('damas-online-host','null'));gg=JSON.parse(lsGet('damas-online-guest','null'));}catch(e){}
   const conn=st==='ok'?'<span class="netdot ok"></span>Conectado':st==='erro'?'<span class="netdot bad"></span>Sem conexão, tentando de novo…':'<span class="netdot"></span>Conectando…';
   const room=r=>{const full=r.open<=0,playing=r.status!=='lobby';
-    return `<li class="roomrow"><span class="rr-code">${esc(r.code)}</span><span class="rr-txt"><b>Sala de ${esc(r.name||'?')}</b><small>${r.taken}/${r.np} pessoas · ${r.np} jogadores${r.randAll?' · classes aleatórias':''}${playing?' · em partida':full?' · cheia':''}</small></span>
+    return `<li class="roomrow"><span class="rr-code">${esc(r.code)}</span><span class="rr-txt"><b>Sala de ${esc(r.name||'?')}</b><small>${r.taken}/${r.np} pessoas · ${r.team?'2 contra 2':r.np+' jogadores'}${r.randAll?' · classes aleatórias':''}${playing?' · em partida':full?' · cheia':''}</small></span>
       <button class="btn ${playing||full?'ghost':'primary'}" data-join="${esc(r.code)}" ${playing||full?'disabled':''}>${playing?'Jogando':full?'Cheia':'Entrar'}</button></li>`;};
   return `<section class="menu online">
     <div class="sub-h"><button class="btn ghost back" id="tomenu">← Menu</button><h2>Jogar online</h2><span class="netstat">${conn}</span></div>
@@ -3242,7 +3274,7 @@ function renderLobby(){
     const see=!L.randAll&&(mine||(host&&st.kind==='bot'));const deck=see?st.deck||null:null;const hidden=!see&&(st.kind==='guest'||st.kind==='host'||st.kind==='bot');
     const picker=!L.randAll&&(mine||(host&&st.kind==='bot'))?`<div class="deckgrid mini">${Object.entries(DECKS).map(([k,d])=>`<button class="d-${k}" data-netdeck="${i}:${k}" aria-pressed="${deck===k}" title="${d.name}">${icon(k)}<span>${d.name}</span></button>`).join('')}${host&&st.kind==='bot'?RANDBTN(i,deck==='random','netdeck'):''}</div>`:'';
     return `<div class="lseat${mine?' me':''}${st.kind==='open'?' open':''} ${deck&&deck!=='random'?'d-'+deck:''}">
-      <div class="seat-h">${deck&&deck!=='random'&&st.kind!=='open'?charSVG(deck,'schar'):hidden||deck==='random'?'<span class="mystery" aria-hidden="true">?</span>':'<span class="token" style="--pc:#777"></span>'}<h3>${who}${mine?' · você':''}<small>${tag}${deck==='random'?' · classe aleatória':deck&&!mine&&st.kind!=='open'?' · '+DECKS[deck].name:''}${hidden?(L.randAll?' · classe sorteada ao começar':' · classe secreta até começar'):''}</small></h3>
+      <div class="seat-h">${deck&&deck!=='random'&&st.kind!=='open'?charSVG(deck,'schar'):hidden||deck==='random'?'<span class="mystery" aria-hidden="true">?</span>':'<span class="token" style="--pc:#777"></span>'}<h3>${who}${mine?' · você':''}<small>${L.team&&L.np===4?TEAMPOS[i]+' · ':''}${tag}${deck==='random'?' · classe aleatória':deck&&!mine&&st.kind!=='open'?' · '+DECKS[deck].name:''}${hidden?(L.randAll?' · classe sorteada ao começar':' · classe secreta até começar'):''}</small></h3>
       ${host&&(st.kind==='open'||st.kind==='bot')?`<div class="seg small"><button data-netseat="${i}:open" aria-pressed="${st.kind==='open'}">Vaga</button><button data-netseat="${i}:bot" aria-pressed="${st.kind==='bot'}">Bot</button></div>`:''}</div>
       ${host&&st.kind==='bot'?lvlSeg(i,st.lvl,'netlvl'):st.kind==='bot'?`<p class="note">Bot ${lvlName(st.lvl).toLowerCase()}</p>`:''}
       ${picker}${mine&&deck&&!L.randAll&&deck!=='random'?`<p class="deckblurb"><b>${charName(deck)} · ${charLine(deck)}:</b> ${DECKS[deck].blurb}</p>`:''} ${see&&deck&&deck!=='random'?`<button class="btn ghost peekbtn" data-peek="${deck}">Ver as cartas de ${charName(deck)}</button>`:''}</div>`;};
@@ -3253,9 +3285,11 @@ function renderLobby(){
     <div class="roomcode big" aria-label="Código da sala">${L.code.split('').map(c=>`<span>${c}</span>`).join('')}</div>
     <div class="row2 center"><button class="btn ghost" id="netcopy" data-link="${esc(link)}">Copiar convite</button>${navigator.share?`<button class="btn ghost" id="netshare" data-link="${esc(link)}">Compartilhar</button>`:''}</div>
     ${host?`<div class="seg" role="group" aria-label="Número de jogadores">${[2,3,4].map(n=>`<button data-lobbynp="${n}" aria-pressed="${L.np===n}">${n} jogadores</button>`).join('')}</div>
+      ${L.np===4?`<div class="seg small" role="group" aria-label="Formato"><button data-netteam="0" aria-pressed="${!L.team}">Todos contra todos</button><button data-netteam="1" aria-pressed="${!!L.team}">2 contra 2</button></div>`:''}
       <div class="seg small" role="group" aria-label="Movimento"><button data-netomni="0" aria-pressed="${!L.omni}">Só para frente</button><button data-netomni="1" aria-pressed="${!!L.omni}">4 diagonais</button></div>
       <div class="seg small" role="group" aria-label="Classes"><button data-lobbyrand="0" aria-pressed="${!L.randAll}">Cada um escolhe</button><button data-lobbyrand="1" aria-pressed="${!!L.randAll}">Classes aleatórias</button></div>`
-      :`<p class="note">${L.np} jogadores · ${L.omni?'4 diagonais':'só para frente'}. ${L.randAll?'Espere o anfitrião começar.':'Escolha o seu baralho e espere o anfitrião começar.'}</p>`}
+      :`<p class="note">${L.team&&L.np===4?'2 contra 2':L.np+' jogadores'} · ${L.omni?'4 diagonais':'só para frente'}. ${L.randAll?'Espere o anfitrião começar.':'Escolha o seu baralho e espere o anfitrião começar.'}</p>`}
+    ${L.team&&L.np===4?`<p class="note">${TEAMNOTE}</p>`:''}
     ${L.randAll?'<p class="randnote"><span class="rdq" aria-hidden="true">?</span>Classes aleatórias: ninguém escolhe. Cada jogador recebe uma classe sorteada quando a partida começar.</p>':''}
     <div class="lseats">${L.seats.map(seat).join('')}</div>
     ${host?`<div class="setup-actions"><button class="btn primary" id="netstart">Começar partida</button></div><p class="note center">${open?`${open} vaga${open>1?'s':''} livre${open>1?'s':''} ${open>1?'viram bots':'vira bot'} ao começar.`:'Todos os lugares ocupados.'}</p>`:`<p class="note center waitnote">Esperando o anfitrião começar a partida…</p>`}
@@ -3270,7 +3304,7 @@ function renderSetup(){
   const RANDBTN=(i,on,attr)=>`<button class="randdeck" data-${attr}="${i}:random" aria-pressed="${on}"><span class="rdq" aria-hidden="true">?</span><span>Aleatório</span></button>`;
   const seat=(st,i)=>{const rnd=st.deck==='random';if(rnd&&st.ctrl!=='bot')st.deck='ataque';
     return `<section class="seat d-${rnd?'arquiteto':st.deck}">
-     <div class="seat-h">${rnd?'<span class="mystery" aria-hidden="true">?</span>':charSVG(st.deck,'schar')}<h3>${J(i)}<small>${SEATPOS[n][i]} · ${rnd?'classe sorteada ao começar':'peças '+DECKS[st.deck].name.toLowerCase()}</small></h3>
+     <div class="seat-h">${rnd?'<span class="mystery" aria-hidden="true">?</span>':charSVG(st.deck,'schar')}<h3>${J(i)}<small>${n===4&&ui.team4?TEAMPOS[i]:SEATPOS[n][i]} · ${rnd?'classe sorteada ao começar':'peças '+DECKS[st.deck].name.toLowerCase()}</small></h3>
        <div class="seg small" role="group" aria-label="Quem joga"><button data-ctrl="${i}:human" aria-pressed="${st.ctrl==='human'}">Pessoa</button><button data-ctrl="${i}:bot" aria-pressed="${st.ctrl==='bot'}">Bot</button></div></div>
      ${st.ctrl==='bot'?lvlSeg(i,st.lvl,'lvl'):''}
      <div class="deckgrid">${Object.entries(DECKS).map(([k,d])=>`<button class="d-${k}" data-pick="${i}:${k}" aria-pressed="${st.deck===k}">${icon(k)}<span>${d.name}</span></button>`).join('')}${st.ctrl==='bot'?RANDBTN(i,rnd,'pick'):''}</div>
@@ -3279,7 +3313,8 @@ function renderSetup(){
   return `<div class="setupwrap">
     <div class="sub-h"><button class="btn ghost back" id="tomenu">← Menu</button><h2>Jogar offline</h2></div>
     <div class="seg" role="group" aria-label="Número de jogadores"><button data-mode="2" aria-pressed="${n===2}">2 jogadores</button><button data-mode="3" aria-pressed="${n===3}">3 jogadores</button><button data-mode="4" aria-pressed="${n===4}">4 jogadores</button></div>
-    <p class="note">${n===2?'Tabuleiro 8×8 clássico, 12 peças para cada lado.':n===3?'Tabuleiro 11×11. Cada jogador começa num lado e anda em direção ao lado oposto. O Jogador 3 começa com 8 peças para compensar a posição. Vence quem sobrar por último.':'Tabuleiro 11×11 com os quatro lados ocupados, 9 peças para cada um. Todos contra todos: vence quem sobrar por último.'}
+    ${n===4?`<div class="seg small" role="group" aria-label="Formato"><button data-team4="0" aria-pressed="${!ui.team4}">Todos contra todos</button><button data-team4="1" aria-pressed="${!!ui.team4}">2 contra 2</button></div>`:''}
+    <p class="note">${n===2?'Tabuleiro 8×8 clássico, 12 peças para cada lado.':n===3?'Tabuleiro 11×11. Cada jogador começa num lado e anda em direção ao lado oposto. O Jogador 3 começa com 8 peças para compensar a posição. Vence quem sobrar por último.':(ui.team4?TEAMNOTE:'Tabuleiro 11×11 com os quatro lados ocupados, 9 peças para cada um. Todos contra todos: vence quem sobrar por último.')}
       ${nh>1?' No mesmo celular: jogue o seu turno e passe o aparelho. A sua mão fica escondida na troca.':nh===1?' Só uma pessoa: você joga contra os bots sem precisar esconder a tela.':' Ninguém humano: os bots jogam sozinhos e você assiste.'}</p>
     <div class="seat"><div class="seat-h"><h3>Movimento das peças<small>Regra em teste</small></h3>
       <div class="seg small" role="group" aria-label="Movimento"><button data-omni="0" aria-pressed="${!ui.omni}">Só para frente</button><button data-omni="1" aria-pressed="${!!ui.omni}">4 diagonais</button></div></div>
@@ -3291,9 +3326,12 @@ function renderSetup(){
 }
 
 /* ---------- jogo ---------- */
+const JOKER='<span class="joker" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z"/></svg></span>';
+const TEAMNOTE='Tabuleiro 11×11, 2 contra 2: cada dupla fica do mesmo lado do tabuleiro, com 8 peças cada um e 1 coringa (a peça com estrela) que os dois parceiros podem mover. Enquanto o coringa estiver no tabuleiro, ele conta como peça dos dois. Os turnos seguem em volta da mesa, alternando os times. Vence a dupla que eliminar a outra.';
 const LOCK='<svg class="lockico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
 function plateHTML(i,mine){
   const s=S,P=s.players[i],cnt=count(s,i),tags=[];
+  if(s.team){const v=viewer(),ally=v!=null&&v!==i&&s.team[v]===s.team[i];tags.push(`<span class="tag team t${s.team[i]}">${ally?'Parceiro':v===i?teamName(s.team[i]):v==null?teamName(s.team[i]):'Rival'}</span>`);}
   if(isBot(i))tags.push(`<span class="tag bot">bot ${lvlName(P.lvl).toLowerCase()}</span>`);
   if(P.out)tags.push('<span class="tag warn">eliminado</span>');
   if(P.skip)tags.push('<span class="tag warn">perde a vez</span>');
@@ -3353,9 +3391,9 @@ function renderGame(){
     if(vr===N-1)inner+=`<span class="lbl fl">${botByCol?L[c]:N-r}</span>`;
     if(ter)inner+=`<span class="terr ${ter.type}"></span>`;
     if(pits.some(q=>eq(q,[r,c])))inner+='<span class="terr pit"></span>';
-    if(p)inner+=`<span class="pc o${p.owner}${shielded(s,p,[r,c])?' shield':''}${frozen(s,p)?' frozen':''}" data-id="${p.id}"><i class="pcs" aria-hidden="true"></i>${kingLike(s,p)?CROWN:''}${p.doom?SKULL:''}</span>`;
+    if(p)inner+=`<span class="pc o${p.owner}${shielded(s,p,[r,c])?' shield':''}${frozen(s,p)?' frozen':''}${p.shared?' jk':''}" data-id="${p.id}"><i class="pcs" aria-hidden="true"></i>${kingLike(s,p)?CROWN:''}${p.doom?SKULL:''}${p.shared?JOKER:''}</span>`;
     if(mv)inner+=`<span class="dot${mv.cap?' cap':''}"></span>`;
-    const lab=sq(s,[r,c])+(p?` peça do ${J(p.owner)}${p.king?' (dama)':''}`:'')+(ter?(ter.type==='ice'?' gelo':' portal'):'')+(wall?' muralha':'');
+    const lab=sq(s,[r,c])+(p?(p.shared?` coringa do ${teamName(s.team[p.owner])}`:` peça do ${J(p.owner)}`)+(p.king?' (dama)':''):'')+(ter?(ter.type==='ice'?' gelo':' portal'):'')+(wall?' muralha':'');
     cells+=`<button class="${cls.join(' ')}" data-r="${r}" data-c="${c}" data-v="${vr},${vc}" aria-label="${lab}" ${dark?'':'tabindex="-1"'} ${tgtColor?`style="--tg:${tgtColor}"`:''}>${inner}</button>`;
   }
   // status
@@ -3450,7 +3488,7 @@ function renderOverlay(){
   }else if(inGame()&&S.phase==='over'&&NET.on){
     const w=S.winner,host=NET.role==='host';
     html=`<div class="overlay"><div class="ov-in"><p class="eyebrow">Fim de jogo · turno ${S.turn}</p>
-      ${w!==null?`<span class="bigchar">${charSVG(S.players[w].deck)}</span><h2>${w===NET.seat?'Você venceu!':esc(J(w))+' venceu!'}</h2>`:'<h2>Empate</h2>'}<p class="hint">${esc(S.reason)}</p>
+      ${w!==null?`<span class="bigchar">${charSVG(S.players[w].deck)}</span><h2>${S.team&&S.winTeam!=null?(teamWon(S,NET.seat)?'Sua dupla venceu!':esc(winnerLabel(S,J))+' venceu!'):w===NET.seat?'Você venceu!':esc(J(w))+' venceu!'}</h2>`:'<h2>Empate</h2>'}<p class="hint">${esc(S.reason)}</p>
       ${host?`<div class="ov-row"><button class="btn primary" id="rematch">Revanche</button><button class="btn ghost" id="tosetup">Voltar à sala</button><button class="btn ghost" id="netleave">Fechar sala</button></div>`
         :`<p class="hint">Esperando o anfitrião escolher a revanche…</p><div class="ov-row"><button class="btn ghost" id="netleave">Sair da sala</button></div>`}</div></div>`;
   }else if(ui.tut&&ui.tut.show){html=tutOverlayHTML();
@@ -3461,7 +3499,7 @@ function renderOverlay(){
   }else if(inGame()&&S.phase==='over'&&!ui.tut){
     const w=S.winner;
     html=`<div class="overlay"><div class="ov-in"><p class="eyebrow">Fim de jogo · turno ${S.turn}</p>
-      ${w!==null?`<span class="bigchar">${charSVG(S.players[w].deck)}</span><h2>${label(w)} venceu!</h2>`:'<h2>Empate</h2>'}<p class="hint">${esc(S.reason)}</p>
+      ${w!==null?`<span class="bigchar">${charSVG(S.players[w].deck)}</span><h2>${esc(winnerLabel(S,label))} venceu!</h2>`:'<h2>Empate</h2>'}<p class="hint">${esc(S.reason)}</p>
       <div class="ov-row"><button class="btn primary" id="rematch">Revanche</button><button class="btn ghost" id="tosetup">Trocar baralhos</button><button class="btn ghost" id="tomenu">Menu</button></div></div></div>`;
   }else if(ui.logView!=null&&S&&S.log[ui.logView]){
     const l=S.log[ui.logView],c=CARD[l.card];
@@ -3534,6 +3572,11 @@ function renderRules(){
    <li>Mesmo tabuleiro 11×11, agora com os quatro lados ocupados: Jogador 1 embaixo, 2 à esquerda, 3 em cima e 4 à direita, com 9 peças cada.</li>
    <li>Cada um começa encostado no canto à sua esquerda, então todo mundo começa na mesma situação. Nos testes com bots, os quatro lugares venceram entre 18% e 21% das partidas.</li>
    <li>A ordem é 1 → 2 → 3 → 4. Todos contra todos, e vence quem sobrar por último.</li></ul>
+  <h2>2 contra 2</h2><ul>
+   <li>Opção do modo de 4 jogadores. Os Jogadores 1 e 2 formam o Time 1, embaixo; os Jogadores 3 e 4 formam o Time 2, em cima. Cada dupla divide o seu lado do tabuleiro.</li>
+   <li>Cada um tem 8 peças. Cada time tem também 1 <b>coringa</b>, a peça com estrela no centro da fileira de trás: qualquer um dos dois parceiros pode movê-lo, e enquanto ele estiver no tabuleiro ninguém da dupla é eliminado.</li>
+   <li>A ordem dos turnos é em volta da mesa: 1 → 4 → 3 → 2. Assim cada um espera o mesmo tempo para responder ao oponente da sua frente. Nos testes com bots, os dois times venceram 47% e 52% das partidas.</li>
+   <li>As peças e armadilhas do parceiro não atacam você. Vence a dupla que eliminar a outra.</li></ul>
   <h2>3 jogadores</h2><ul>
    <li>Tabuleiro 11×11. O Jogador 1 começa embaixo, o 2 à esquerda e o 3 à direita, cada um com 9 peças. O lado de cima começa vazio.</li>
    <li>Cada um anda em direção ao lado oposto ao seu. Na sua vez, o tabuleiro gira para que o seu lado fique embaixo.</li>
@@ -3578,6 +3621,8 @@ document.addEventListener('click',e=>{
   if(fxBusy&&t.closest('#main')&&S&&ui.tab==='jogar')return;
   if(t.dataset.tab){ui.tab=t.dataset.tab;render();window.scrollTo(0,0);tick();return;}
   if(t.dataset.mode){ui.mode=+t.dataset.mode;render();return;}
+  if(t.dataset.team4!==undefined){ui.team4=t.dataset.team4==='1';render();return;}
+  if(t.dataset.netteam!==undefined){NET.lobby.team=t.dataset.netteam==='1';netHostRefresh(false);render();return;}
   if(t.dataset.pick){const[i,k]=t.dataset.pick.split(':');ui.setup[ui.mode][+i].deck=k;render();return;}
   if(t.dataset.omni!==undefined){ui.omni=t.dataset.omni==='1';render();return;}
   if(t.dataset.peek){ui.peek=t.dataset.peek;renderOverlay();return;}
@@ -3615,7 +3660,7 @@ document.addEventListener('click',e=>{
     case 'start':case 'rematch':{
       if(NET.on){if(NET.role==='host')netBeginGame();return;}
       const seats=t.id==='rematch'&&S?S.players.map(P=>({deck:P.deck,ctrl:P.ctrl,lvl:P.lvl})):ui.setup[ui.mode];
-      const omni=t.id==='rematch'&&S?!!(S.rules&&S.rules.omni):!!ui.omni;startGame(seats,omni);return;}
+      const omni=t.id==='rematch'&&S?!!(S.rules&&S.rules.omni):!!ui.omni,team=t.id==='rematch'&&S?!!S.team:ui.mode===4&&!!ui.team4;startGame(seats,omni,team);return;}
     case 'quick':{startGame([{deck:'random',ctrl:'human'},{deck:'random',ctrl:'bot'}],false);return;}
     case 'continue':{if(!S){S=loadSaved();}if(S){ui.screen='game';lastOrient=null;ui.pending=[];render();tick();}return;}
     case 'tooffline':ui.screen='offline';render();window.scrollTo(0,0);return;
