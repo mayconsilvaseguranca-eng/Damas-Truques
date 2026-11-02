@@ -870,6 +870,9 @@ header .chatbtn::before{inset:0;box-shadow:0 0 12px 4px #2bd6c4}
 .rdq{width:18px;height:18px;flex:none;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--hi);color:#1b1408;font-weight:900;font-size:.75rem}
 .randnote{display:flex;align-items:center;gap:8px;margin:0;padding:8px 12px;border-radius:12px;border:1px dashed var(--hi);color:var(--fg);font-size:.86rem;background:color-mix(in srgb,var(--hi) 10%,transparent)}
 .online .row2 .seg.small{flex:1 1 auto}
+.lvlrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:2px 0 4px}
+.lvllab{font-size:.74rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.lvlseg{flex:1 1 auto}
 
 /* tema: brinquedo.css */
 /* ===== Tema Brinquedo: amarelo, contornos grossos, cantos redondos ===== */
@@ -1778,7 +1781,7 @@ function newGame(opts){
     for(let k=0;k<G.ranks;k++)for(let j=G.files[0];j<=G.files[1];j++){const[r,c]=ownSq(s,i,k,j);if(isDark(s,r,c)){if(skip){skip--;continue;}s.board[r][c]=newPiece(s,i);}}
     const pile=[];CARDS.filter(c=>c.deck===d).forEach(c=>{for(let k=0;k<c.n;k++){const u='c'+(s.uid++);s.cards[u]=c.id;s.owner[u]=i;pile.push(u);}});
     shuffle(s,pile);
-    s.players.push({deck:d,ctrl:(opts.ctrl&&opts.ctrl[i])||'human',pile,hand:[],traps:[],discard:[],silenced:0,grave:0,lost:0,lostMark:0,lostRecent:0,kingsLost:0,lastCard:null,out:false,skip:false});
+    s.players.push({deck:d,ctrl:(opts.ctrl&&opts.ctrl[i])||'human',lvl:(opts.lvl&&opts.lvl[i])||2,pile,hand:[],traps:[],discard:[],silenced:0,grave:0,lost:0,lostMark:0,lostRecent:0,kingsLost:0,lastCard:null,out:false,skip:false});
     for(let k=0;k<3;k++)draw(s,i);
   });
   const first=Math.max(0,Math.min(np-1,opts.first|0));s.current=first;
@@ -2064,30 +2067,96 @@ function evaluate(s,me){
   sc-=0.85*threatOn(s,me);
   return sc;
 }
+/* profundidade do bot: 1 = olha a própria jogada; 2 = também a resposta do próximo jogador */
+let BOT_DEPTH=1,BOT_DEPTHS=null;
+function evalFast(s,me){
+  if(s.phase==='over')return s.winner===me?1000:(s.winner===null?0:-1000);
+  if(s.players[me].out)return -900;
+  const val={};alive(s).forEach(i=>val[i]=0);
+  forEachPiece(s,(p,r,c)=>{if(val[p.owner]===undefined)return;let v=p.king?2.6:1+0.035*rankOf(s,p.owner,[r,c]);if(p.doom)v*=.3;val[p.owner]+=v;});
+  const ov=opps(s,me).map(o=>val[o]);return val[me]-(ov.length?(s.np===2?ov[0]:0.5*Math.max(...ov)+0.5*ov.reduce((a,b)=>a+b,0)/ov.length):0);
+}
+/* melhor sequência de movimentos do jogador da vez, devolvendo o estado final (resposta do oponente) */
+function replySeq(s,who,depth=0){
+  const ms=legalMoves(s);if(!ms.length)return{val:evalFast(s,who),st:s};
+  let best=null;
+  for(const m of ms){const c=clone(s);doMove(c,m.from,m.to);let r;
+    if(c.phase==='chain'||(c.phase==='play'&&c.current===who&&depth<3))r=replySeq(c,who,depth+1);else r={val:evalFast(c,who),st:c};
+    r.val+=Math.random()*0.02;if(!best||r.val>best.val)best=r;}
+  return best;
+}
+/* todas as sequências de movimento do jogador da vez (capturas em cadeia incluídas), até um limite */
+function allSeqs(s,who,depth=0,out=[]){
+  const ms=legalMoves(s);if(!ms.length){out.push(s);return out;}
+  for(const m of ms){if(out.length>=28)break;const c=clone(s);doMove(c,m.from,m.to);
+    if(c.phase==='chain'||(c.phase==='play'&&c.current===who&&depth<3))allSeqs(c,who,depth+1,out);else out.push(c);}
+  return out;
+}
+const passTurn=t=>{t=clone(t);if(t.phase==='ended'||t.phase==='play'){t.phase='ended';endTurn(t);}if(t.phase==='pass')t.phase='play';return t;};
+/* resposta pensando uma jogada à frente: escolhe a jogada que fica melhor depois da melhor resposta do próximo */
+function replyDeep(s,who){
+  let best=null,bv=-1e9;
+  for(const st of allSeqs(s,who)){let v;
+    if(st.phase==='over')v=evalFast(st,who);
+    else{const u=passTurn(st);v=u.phase==='over'?evalFast(u,who):evalFast(replySeq(u,u.current).st,who);}
+    v+=Math.random()*0.02;if(v>bv){bv=v;best=st;}}
+  return best||s;
+}
+/* valor de uma posição depois que os próximos jogadores respondem com a melhor jogada de cada um
+   (plies=1: só o próximo jogador; plies=2: ele e depois o seguinte, que pode ser eu de novo) */
+function evaluateAhead(s,me,plies){
+  let t=s;
+  for(let k=0;k<plies;k++){
+    if(t.phase==='over')break;
+    t=clone(t);if(t.phase==='ended'||t.phase==='play'){t.phase='ended';endTurn(t);}
+    if(t.phase==='over')break;
+    if(t.phase==='pass')t.phase='play';
+    // no nível difícil, o primeiro a responder também pensa uma jogada à frente
+    t=(plies>=2&&k===0)?replyDeep(t,t.current):replySeq(t,t.current).st;
+  }
+  return evaluate(t,me);
+}
+const evaluate2=(s,me)=>evaluateAhead(s,me,1);
+function depthOf(s,me){if(BOT_DEPTHS)return BOT_DEPTHS[me];const P=s.players&&s.players[me];return(P&&P.lvl)||BOT_DEPTH;}
+/* nível 3: o oponente responde já pensando na minha resposta (eu → ele → eu) */
+function replySmart(s,who,depth=0){
+  const ms=legalMoves(s);if(!ms.length)return{val:evaluate(s,who),st:s};
+  let best=null;
+  for(const m of ms){const c=clone(s);doMove(c,m.from,m.to);let r;
+    if(c.phase==='chain'||(c.phase==='play'&&c.current===who&&depth<3))r=replySmart(c,who,depth+1);else r={val:evaluate(c,who),st:c};
+    r.val+=Math.random()*0.02;if(!best||r.val>best.val)best=r;}
+  return best;
+}
+function evaluate3(s,me){if(s.phase==='over')return evaluate(s,me);const t=passTurn(s);if(t.phase==='over'||t.current===me)return evaluate(t,me);
+  const v3=BOT3_REPLY;
+  if(v3==='full'){let u=replySmart(t,t.current).st;if(u.phase==='over')return evaluate(u,me);u=passTurn(u);if(u.phase!=='over'&&u.current===me)u=replySmart(u,me).st;return evaluate(u,me);}
+  return evaluate(v3==='deep'?replyDeep(t,t.current):replySmart(t,t.current).st,me);}
+const leafEval=(s,me)=>{const d=depthOf(s,me);return d>=3?evaluate3(s,me):d===2?evaluate2(s,me):evaluate(s,me);};
+let BOT3_MODE='wide',BOT3_REPLY='full';
 function bestSequence(s,me,depth=0){
   const ms=legalMoves(s);
-  if(!ms.length)return{val:evaluate(s,me),step:null};
+  if(!ms.length)return{val:leafEval(s,me),step:null};
   let best={val:-1e9,step:null};
   for(const m of ms){const c=clone(s);doMove(c,m.from,m.to);
     let v;
     if(c.phase==='chain')v=bestSequence(c,me,depth+1).val;
     else if(c.phase==='play'&&c.current===me&&depth<3)v=bestSequence(c,me,depth+1).val;
-    else v=evaluate(c,me);
+    else v=leafEval(c,me);
     v+=Math.random()*0.04;
     if(v>best.val)best={val:v,step:m};}
   return best;
 }
 function sample(a,n){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a.slice(0,n);}
 function cardOptions(s){
-  const P=s.players[s.current],out=[],seen=new Set();
+  const P=s.players[s.current],out=[],seen=new Set();const wide=depthOf(s,s.current)>=3&&BOT3_MODE==='wide',nt=wide?14:5,nd=wide?6:3;
   for(const uid of P.hand){const c=CARD[s.cards[uid]];if(seen.has(c.id)||cardBlock(s,uid))continue;seen.add(c.id);
-    if(c.kind==='armadilha'){if(c.targets){const ts=c.targets(s);sample(ts,4).forEach(t=>out.push({uid,target:t}));}else out.push({uid});continue;}
+    if(c.kind==='armadilha'){if(c.targets){const ts=c.targets(s);sample(ts,wide?10:4).forEach(t=>out.push({uid,target:t}));}else out.push({uid});continue;}
     const e=effCard(s,uid);const os=e.pickOpp?oppChoices(s,e):[undefined];
     for(const o of os){
       if(!e.targets){out.push({uid,opp:o});continue;}
-      for(const t of sample(e.targets(s),5)){if(e.dests){for(const d of sample(e.dests(s,t),3))out.push({uid,target:t,dest:d,opp:o});}else out.push({uid,target:t,opp:o});}
+      for(const t of sample(e.targets(s),nt)){if(e.dests){for(const d of sample(e.dests(s,t),nd))out.push({uid,target:t,dest:d,opp:o});}else out.push({uid,target:t,opp:o});}
     }}
-  return sample(out,26);
+  return sample(out,wide?80:26);
 }
 /* o bot não vê as armadilhas do oponente: imagina armadilhas plausíveis do baralho dele */
 function beliefClone(s,me){const c=clone(s);
@@ -2098,8 +2167,9 @@ function botChooseCard(s){
   const me=s.current;if(s.cardPlayed||s.moved||s.players[me].silenced===s.turn)return null;
   const root=beliefClone(s,me);
   const base=bestSequence(clone(root),me).val;let best=null,bv=base+0.08;
-  for(const o of cardOptions(s)){const c=clone(root);if(playCard(c,o.uid,o.target,o.dest,o.opp))continue;
-    const v=c.phase==='over'||c.phase==='ended'?evaluate(c,me):bestSequence(c,me).val;
+  let opts=cardOptions(s);
+  for(const o of opts){const c=clone(root);if(playCard(c,o.uid,o.target,o.dest,o.opp))continue;
+    const v=c.phase==='over'||c.phase==='ended'?leafEval(c,me):bestSequence(c,me).val;
     if(v>bv){bv=v;best=o;}}
   return best;
 }
@@ -2299,7 +2369,7 @@ function netBeginGame(){
   L.seats.forEach(st=>{if(st.kind==='open')Object.assign(st,{kind:'bot',deck:'random'});if(L.randAll||!st.deck||st.deck==='random'||!DECKS[st.deck])st.deck=randDeck();});
   const names=L.seats.map((st,i)=>st.kind==='bot'?'Bot '+(i+1):st.name);
   NAMES=names;
-  S=newGame({decks:L.seats.map(x=>x.deck||randDeck()),ctrl:L.seats.map(x=>x.kind==='host'?'human':x.kind==='guest'?'remote':'bot'),seed:Date.now()&0x7fffffff,omni:L.omni,first:Math.floor(Math.random()*L.seats.length)});
+  S=newGame({decks:L.seats.map(x=>x.deck||randDeck()),ctrl:L.seats.map(x=>x.kind==='host'?'human':x.kind==='guest'?'remote':'bot'),seed:Date.now()&0x7fffffff,omni:L.omni,lvl:L.seats.map(x=>x.lvl||2),first:Math.floor(Math.random()*L.seats.length)});
   S.names=names;NAMES=names;
   L.status='jogando';ui.screen='game';lastOrient=null;ui.pending=[];ui.orient=0;
   lsSet('damas-deck',L.seats[0].deck);
@@ -3087,7 +3157,7 @@ function useCard(uid){
 }
 function startGame(seats,omni){
   const D=Object.keys(DECKS);seats=seats.map(x=>x.deck==='random'||!DECKS[x.deck]?{...x,deck:D[Math.floor(Math.random()*D.length)]}:x);
-  S=newGame({decks:seats.map(x=>x.deck),ctrl:seats.map(x=>x.ctrl),seed:Date.now()&0x7fffffff,omni,first:Math.floor(Math.random()*seats.length)});
+  S=newGame({decks:seats.map(x=>x.deck),ctrl:seats.map(x=>x.ctrl),seed:Date.now()&0x7fffffff,omni,lvl:seats.map(x=>x.lvl||2),first:Math.floor(Math.random()*seats.length)});
   ui.screen='game';lastOrient=null;ui.pending=[];ui.orient=0;saveGame();render();tick();window.scrollTo(0,0);}
 
 /* ---------- menu principal ---------- */
@@ -3157,6 +3227,7 @@ function renderLobby(){
     return `<div class="lseat${mine?' me':''}${st.kind==='open'?' open':''} ${deck&&deck!=='random'?'d-'+deck:''}">
       <div class="seat-h">${deck&&deck!=='random'&&st.kind!=='open'?charSVG(deck,'schar'):hidden||deck==='random'?'<span class="mystery" aria-hidden="true">?</span>':'<span class="token" style="--pc:#777"></span>'}<h3>${who}${mine?' · você':''}<small>${tag}${deck==='random'?' · classe aleatória':deck&&!mine&&st.kind!=='open'?' · '+DECKS[deck].name:''}${hidden?(L.randAll?' · classe sorteada ao começar':' · classe secreta até começar'):''}</small></h3>
       ${host&&(st.kind==='open'||st.kind==='bot')?`<div class="seg small"><button data-netseat="${i}:open" aria-pressed="${st.kind==='open'}">Vaga</button><button data-netseat="${i}:bot" aria-pressed="${st.kind==='bot'}">Bot</button></div>`:''}</div>
+      ${host&&st.kind==='bot'?lvlSeg(i,st.lvl,'netlvl'):st.kind==='bot'?`<p class="note">Bot ${lvlName(st.lvl).toLowerCase()}</p>`:''}
       ${picker}${mine&&deck&&!L.randAll&&deck!=='random'?`<p class="deckblurb"><b>${charName(deck)} · ${charLine(deck)}:</b> ${DECKS[deck].blurb}</p>`:''} ${see&&deck&&deck!=='random'?`<button class="btn ghost peekbtn" data-peek="${deck}">Ver as cartas de ${charName(deck)}</button>`:''}</div>`;};
   const link=location.href.split('?')[0].split('#')[0]+'?sala='+L.code;
   const open=L.seats.filter(x=>x.kind==='open').length;
@@ -3174,6 +3245,9 @@ function renderLobby(){
   </section>`;
 }
 
+const LVLS=[[1,'Fácil','pensa 1 jogada à frente'],[2,'Médio','pensa 2 jogadas à frente'],[3,'Difícil','pensa 3 jogadas à frente']];
+const lvlName=l=>(LVLS.find(x=>x[0]===(l||2))||LVLS[1])[1];
+function lvlSeg(i,cur,attr){return `<div class="lvlrow"><span class="lvllab">Nível do bot</span><div class="seg small lvlseg" role="group" aria-label="Nível do bot">${LVLS.map(([v,n,d])=>`<button data-${attr}="${i}:${v}" aria-pressed="${(cur||2)===v}" title="${d}">${n}</button>`).join('')}</div></div>`;}
 function renderSetup(){
   const n=ui.mode,seats=ui.setup[n];
   const RANDBTN=(i,on,attr)=>`<button class="randdeck" data-${attr}="${i}:random" aria-pressed="${on}"><span class="rdq" aria-hidden="true">?</span><span>Aleatório</span></button>`;
@@ -3181,6 +3255,7 @@ function renderSetup(){
     return `<section class="seat d-${rnd?'arquiteto':st.deck}">
      <div class="seat-h">${rnd?'<span class="mystery" aria-hidden="true">?</span>':charSVG(st.deck,'schar')}<h3>${J(i)}<small>${SEATPOS[n][i]} · ${rnd?'classe sorteada ao começar':'peças '+DECKS[st.deck].name.toLowerCase()}</small></h3>
        <div class="seg small" role="group" aria-label="Quem joga"><button data-ctrl="${i}:human" aria-pressed="${st.ctrl==='human'}">Pessoa</button><button data-ctrl="${i}:bot" aria-pressed="${st.ctrl==='bot'}">Bot</button></div></div>
+     ${st.ctrl==='bot'?lvlSeg(i,st.lvl,'lvl'):''}
      <div class="deckgrid">${Object.entries(DECKS).map(([k,d])=>`<button class="d-${k}" data-pick="${i}:${k}" aria-pressed="${st.deck===k}">${icon(k)}<span>${d.name}</span></button>`).join('')}${st.ctrl==='bot'?RANDBTN(i,rnd,'pick'):''}</div>
      ${rnd?'<p class="deckblurb"><b>Aleatório:</b> o bot recebe uma classe sorteada quando a partida começar.</p>':`<p class="deckblurb"><b>${charName(st.deck)} · ${charLine(st.deck)}:</b> ${DECKS[st.deck].blurb}</p><button class="btn ghost peekbtn" data-peek="${st.deck}">Ver as cartas de ${charName(st.deck)}</button>`}</section>`;};
   const nh=seats.filter(x=>x.ctrl==='human').length;
@@ -3202,7 +3277,7 @@ function renderSetup(){
 const LOCK='<svg class="lockico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
 function plateHTML(i,mine){
   const s=S,P=s.players[i],cnt=count(s,i),tags=[];
-  if(isBot(i))tags.push('<span class="tag bot">bot</span>');
+  if(isBot(i))tags.push(`<span class="tag bot">bot ${lvlName(P.lvl).toLowerCase()}</span>`);
   if(P.out)tags.push('<span class="tag warn">eliminado</span>');
   if(P.skip)tags.push('<span class="tag warn">perde a vez</span>');
   if(P.guardUntil>s.turn&&!P.out)tags.push('<span class="tag" style="color:var(--dk)">guarda real</span>');
@@ -3490,6 +3565,8 @@ document.addEventListener('click',e=>{
   if(t.dataset.netseat){const[i,k]=t.dataset.netseat.split(':');const st=NET.lobby.seats[+i];if(st.kind==='open'||st.kind==='bot'){st.kind=k;st.deck=k==='bot'?(st.deck||'random'):null;netHostRefresh(false);render();}return;}
   if(t.dataset.netdeck){const[i,k]=t.dataset.netdeck.split(':');const st=NET.lobby.seats[+i];st.deck=k;if(+i===NET.seat)lsSet('damas-deck',k);
     if(NET.role==='host')netHostRefresh(false);else netSend({t:'deck',deck:k});render();return;}
+  if(t.dataset.lvl){const[i,k]=t.dataset.lvl.split(':');ui.setup[ui.mode][+i].lvl=+k;render();return;}
+  if(t.dataset.netlvl){const[i,k]=t.dataset.netlvl.split(':');NET.lobby.seats[+i].lvl=+k;netHostRefresh(false);render();return;}
   if(t.dataset.ctrl){const[i,k]=t.dataset.ctrl.split(':');ui.setup[ui.mode][+i].ctrl=k;render();return;}
   switch(t.id){
     case 'tutstart':tutStart(0);return;
@@ -3510,7 +3587,7 @@ document.addEventListener('click',e=>{
     case 'netshare':{try{navigator.share({title:'Damas & Truques',text:'Entra na minha sala de Damas & Truques! Código '+NET.code,url:t.dataset.link});}catch(e){}return;}
     case 'start':case 'rematch':{
       if(NET.on){if(NET.role==='host')netBeginGame();return;}
-      const seats=t.id==='rematch'&&S?S.players.map(P=>({deck:P.deck,ctrl:P.ctrl})):ui.setup[ui.mode];
+      const seats=t.id==='rematch'&&S?S.players.map(P=>({deck:P.deck,ctrl:P.ctrl,lvl:P.lvl})):ui.setup[ui.mode];
       const omni=t.id==='rematch'&&S?!!(S.rules&&S.rules.omni):!!ui.omni;startGame(seats,omni);return;}
     case 'quick':{const D=Object.keys(DECKS),r=()=>D[Math.floor(Math.random()*D.length)];startGame([{deck:r(),ctrl:'human'},{deck:r(),ctrl:'bot'}],false);return;}
     case 'continue':{if(!S){S=loadSaved();}if(S){ui.screen='game';lastOrient=null;ui.pending=[];render();tick();}return;}
