@@ -2295,6 +2295,7 @@ function netLeave(silent){
 }
 const code4=()=>{const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<4;i++)s+=A[Math.floor(Math.random()*A.length)];return s;};
 const randDeck=()=>{const D=Object.keys(DECKS);return D[Math.floor(Math.random()*D.length)];};
+function randDeckFree(used){const D=Object.keys(DECKS).filter(d=>!used.has(d));const pool=D.length?D:Object.keys(DECKS);return pool[Math.floor(Math.random()*pool.length)];}
 
 /* ---------- anfitrião ---------- */
 function netCreate(np,randAll){
@@ -2378,7 +2379,10 @@ function netSetNp(np){
 }
 function netBeginGame(){
   const L=NET.lobby;
-  L.seats.forEach(st=>{if(st.kind==='open')Object.assign(st,{kind:'bot',deck:'random'});if(L.randAll||!st.deck||st.deck==='random'||!DECKS[st.deck])st.deck=randDeck();});
+  // classes sorteadas sem repetir: cada lugar sorteado pega uma classe que ninguém está usando
+  L.seats.forEach(st=>{if(st.kind==='open')Object.assign(st,{kind:'bot',deck:'random'});if(L.randAll||!st.deck||!DECKS[st.deck])st.deck='random';});
+  const used=new Set(L.seats.map(st=>st.deck).filter(d=>d!=='random'));
+  L.seats.forEach(st=>{if(st.deck==='random'){st.deck=randDeckFree(used);used.add(st.deck);}});
   const names=L.seats.map((st,i)=>st.kind==='bot'?'Bot '+(i+1):st.name);
   NAMES=names;
   S=newGame({decks:L.seats.map(x=>x.deck||randDeck()),ctrl:L.seats.map(x=>x.kind==='host'?'human':x.kind==='guest'?'remote':'bot'),seed:Date.now()&0x7fffffff,omni:L.omni,lvl:L.seats.map(x=>x.lvl||2),first:Math.floor(Math.random()*L.seats.length)});
@@ -3168,7 +3172,7 @@ function useCard(uid){
   ui.tgt=uid;ui.sel=null;ui.piece=null;render();
 }
 function startGame(seats,omni){
-  const D=Object.keys(DECKS);seats=seats.map(x=>x.deck==='random'||!DECKS[x.deck]?{...x,deck:D[Math.floor(Math.random()*D.length)]}:x);
+  {const used=new Set(seats.map(x=>x.deck).filter(d=>DECKS[d]));seats=seats.map(x=>{if(x.deck!=='random'&&DECKS[x.deck])return x;const d=randDeckFree(used);used.add(d);return{...x,deck:d};});}
   S=newGame({decks:seats.map(x=>x.deck),ctrl:seats.map(x=>x.ctrl),seed:Date.now()&0x7fffffff,omni,lvl:seats.map(x=>x.lvl||2),first:Math.floor(Math.random()*seats.length)});
   ui.screen='game';lastOrient=null;ui.pending=[];ui.orient=0;saveGame();render();tick();window.scrollTo(0,0);}
 
@@ -3611,7 +3615,7 @@ document.addEventListener('click',e=>{
       if(NET.on){if(NET.role==='host')netBeginGame();return;}
       const seats=t.id==='rematch'&&S?S.players.map(P=>({deck:P.deck,ctrl:P.ctrl,lvl:P.lvl})):ui.setup[ui.mode];
       const omni=t.id==='rematch'&&S?!!(S.rules&&S.rules.omni):!!ui.omni;startGame(seats,omni);return;}
-    case 'quick':{const D=Object.keys(DECKS),r=()=>D[Math.floor(Math.random()*D.length)];startGame([{deck:r(),ctrl:'human'},{deck:r(),ctrl:'bot'}],false);return;}
+    case 'quick':{startGame([{deck:'random',ctrl:'human'},{deck:'random',ctrl:'bot'}],false);return;}
     case 'continue':{if(!S){S=loadSaved();}if(S){ui.screen='game';lastOrient=null;ui.pending=[];render();tick();}return;}
     case 'tooffline':ui.screen='offline';render();window.scrollTo(0,0);return;
     case 'toonline':ui.screen='online';netBrowse();render();window.scrollTo(0,0);return;
@@ -3621,7 +3625,7 @@ document.addEventListener('click',e=>{
     case 'gocards':ui.tab='cartas';render();window.scrollTo(0,0);return;
     case 'gorules':ui.tab='regras';render();window.scrollTo(0,0);return;
     case 'gotema':openTemaMenu();return;
-    case 'randdecks':{const D=Object.keys(DECKS);ui.setup[ui.mode].forEach(x=>x.deck=D[Math.floor(Math.random()*D.length)]);render();return;}
+    case 'randdecks':{const used=new Set();ui.setup[ui.mode].forEach(x=>{x.deck=randDeckFree(used);used.add(x.deck);});render();return;}
     case 'ready':act({type:'ready'});window.scrollTo(0,0);return;
     case 'endturn':act({type:'endTurn'});return;
     case 'skip':act({type:'skip'});return;
