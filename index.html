@@ -868,6 +868,8 @@ header .chatbtn::before{inset:0;box-shadow:0 0 12px 4px #2bd6c4}
 .deckgrid button.randdeck{color:var(--fg);border-style:dashed}
 .deckgrid button.randdeck[aria-pressed="true"]{border-style:solid;border-color:var(--hi);background:color-mix(in srgb,var(--hi) 16%,var(--card-lo));box-shadow:0 0 14px color-mix(in srgb,var(--hi) 30%,transparent)}
 .rdq{width:18px;height:18px;flex:none;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--hi);color:#1b1408;font-weight:900;font-size:.75rem}
+.randnote{display:flex;align-items:center;gap:8px;margin:0;padding:8px 12px;border-radius:12px;border:1px dashed var(--hi);color:var(--fg);font-size:.86rem;background:color-mix(in srgb,var(--hi) 10%,transparent)}
+.online .row2 .seg.small{flex:1 1 auto}
 
 /* tema: brinquedo.css */
 /* ===== Tema Brinquedo: amarelo, contornos grossos, cantos redondos ===== */
@@ -2198,11 +2200,11 @@ const code4=()=>{const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0
 const randDeck=()=>{const D=Object.keys(DECKS);return D[Math.floor(Math.random()*D.length)];};
 
 /* ---------- anfitrião ---------- */
-function netCreate(np){
+function netCreate(np,randAll){
   const name=cleanName(netName());if(!name){toast('Digite o seu nome primeiro.');return;}
   const code=code4(),id=netId();
   Object.assign(NET,{on:true,role:'host',code,seat:0,id,guests:{}});
-  NET.lobby={code,np,omni:false,status:'lobby',seats:[{kind:'host',id,name,deck:lsGet('damas-deck',randDeck())}]};
+  NET.lobby={code,np,omni:false,randAll:!!randAll,status:'lobby',seats:[{kind:'host',id,name,deck:lsGet('damas-deck',randDeck())}]};
   for(let i=1;i<np;i++)NET.lobby.seats.push({kind:'open'});
   netHostStart();
 }
@@ -2223,7 +2225,7 @@ function netResumeHost(){
   netHostStart();if(S)tick();
 }
 function netRoomInfo(){const L=NET.lobby;return{code:NET.code,name:L.seats[0].name,np:L.np,taken:L.seats.filter(x=>x.kind==='host'||x.kind==='guest').length,
-  open:L.seats.filter(x=>x.kind==='open').length,status:L.status,ts:Date.now()};}
+  open:L.seats.filter(x=>x.kind==='open').length,status:L.status,randAll:!!L.randAll,ts:Date.now()};}
 /* a classe de cada um fica escondida na sala até a partida começar */
 function netLobbyPublic(keepSeat){const L=NET.lobby;return {...L,seats:L.seats.map((st,i)=>i===keepSeat||L.status!=='lobby'?st:{...st,deck:null,picked:!!st.deck})};}
 function netHostRefresh(all){
@@ -2279,7 +2281,7 @@ function netSetNp(np){
 }
 function netBeginGame(){
   const L=NET.lobby;
-  L.seats.forEach(st=>{if(st.kind==='open')Object.assign(st,{kind:'bot',deck:'random'});if(!st.deck||st.deck==='random'||!DECKS[st.deck])st.deck=randDeck();});
+  L.seats.forEach(st=>{if(st.kind==='open')Object.assign(st,{kind:'bot',deck:'random'});if(L.randAll||!st.deck||st.deck==='random'||!DECKS[st.deck])st.deck=randDeck();});
   const names=L.seats.map((st,i)=>st.kind==='bot'?'Bot '+(i+1):st.name);
   NAMES=names;
   S=newGame({decks:L.seats.map(x=>x.deck||randDeck()),ctrl:L.seats.map(x=>x.kind==='host'?'human':x.kind==='guest'?'remote':'bot'),seed:Date.now()&0x7fffffff,omni:L.omni,first:Math.floor(Math.random()*L.seats.length)});
@@ -3109,7 +3111,7 @@ function renderOnline(){
   let gh=null,gg=null;try{gh=JSON.parse(lsGet('damas-online-host','null'));gg=JSON.parse(lsGet('damas-online-guest','null'));}catch(e){}
   const conn=st==='ok'?'<span class="netdot ok"></span>Conectado':st==='erro'?'<span class="netdot bad"></span>Sem conexão, tentando de novo…':'<span class="netdot"></span>Conectando…';
   const room=r=>{const full=r.open<=0,playing=r.status!=='lobby';
-    return `<li class="roomrow"><span class="rr-code">${esc(r.code)}</span><span class="rr-txt"><b>Sala de ${esc(r.name||'?')}</b><small>${r.taken}/${r.np} pessoas · ${r.np} jogadores${playing?' · em partida':full?' · cheia':''}</small></span>
+    return `<li class="roomrow"><span class="rr-code">${esc(r.code)}</span><span class="rr-txt"><b>Sala de ${esc(r.name||'?')}</b><small>${r.taken}/${r.np} pessoas · ${r.np} jogadores${r.randAll?' · classes aleatórias':''}${playing?' · em partida':full?' · cheia':''}</small></span>
       <button class="btn ${playing||full?'ghost':'primary'}" data-join="${esc(r.code)}" ${playing||full?'disabled':''}>${playing?'Jogando':full?'Cheia':'Entrar'}</button></li>`;};
   return `<section class="menu online">
     <div class="sub-h"><button class="btn ghost back" id="tomenu">← Menu</button><h2>Jogar online</h2><span class="netstat">${conn}</span></div>
@@ -3118,6 +3120,7 @@ function renderOnline(){
     ${gg&&gg.code&&Date.now()-gg.t<6*3600e3&&!(gh&&gh.code===gg.code)?`<button class="menu-item" id="resumeguest"><span><b>Voltar para a sala ${esc(gg.code)}</b><small>Entrar de novo no mesmo lugar.</small></span></button>`:''}
     <div class="seat"><div class="seat-h"><h3>Criar sala<small>Os lugares vazios viram bots quando a partida começar.</small></h3></div>
       <div class="row2"><div class="seg small" role="group" aria-label="Jogadores">${[2,3,4].map(n=>`<button data-netnp="${n}" aria-pressed="${(ui.netNp||2)===n}">${n} jog.</button>`).join('')}</div>
+      <div class="seg small" role="group" aria-label="Classes"><button data-netrand="0" aria-pressed="${!ui.netRand}">Cada um escolhe</button><button data-netrand="1" aria-pressed="${!!ui.netRand}">Classes aleatórias</button></div>
       <button class="btn primary" id="netcreate">Criar sala</button></div></div>
     <div class="seat"><div class="seat-h"><h3>Salas abertas<small>${rooms.length?'Toque em Entrar para jogar.':'A lista atualiza sozinha.'}</small></h3></div>
       ${rooms.length?`<ul class="roomlist">${rooms.map(room).join('')}</ul>`:`<p class="emptyrooms">${st==='ok'?'Nenhuma sala aberta agora. Crie uma e chame os amigos!':'Procurando salas…'}</p>`}
@@ -3134,12 +3137,12 @@ function renderLobby(){
   const seat=(st,i)=>{
     const mine=i===me,who=st.kind==='open'?'Vaga livre':st.kind==='bot'?'Bot':esc(st.name||'?');
     const tag=st.kind==='host'?'anfitrião':st.kind==='guest'?(st.off?'sem conexão':'pronto'):st.kind==='bot'?'bot':'esperando…';
-    const see=mine||(host&&st.kind==='bot');const deck=see?st.deck||null:null;const hidden=!see&&(st.kind==='guest'||st.kind==='host'||st.kind==='bot');
-    const picker=(mine||(host&&st.kind==='bot'))?`<div class="deckgrid mini">${Object.entries(DECKS).map(([k,d])=>`<button class="d-${k}" data-netdeck="${i}:${k}" aria-pressed="${deck===k}" title="${d.name}">${icon(k)}<span>${d.name}</span></button>`).join('')}${host&&st.kind==='bot'?RANDBTN(i,deck==='random','netdeck'):''}</div>`:'';
+    const see=!L.randAll&&(mine||(host&&st.kind==='bot'));const deck=see?st.deck||null:null;const hidden=!see&&(st.kind==='guest'||st.kind==='host'||st.kind==='bot');
+    const picker=!L.randAll&&(mine||(host&&st.kind==='bot'))?`<div class="deckgrid mini">${Object.entries(DECKS).map(([k,d])=>`<button class="d-${k}" data-netdeck="${i}:${k}" aria-pressed="${deck===k}" title="${d.name}">${icon(k)}<span>${d.name}</span></button>`).join('')}${host&&st.kind==='bot'?RANDBTN(i,deck==='random','netdeck'):''}</div>`:'';
     return `<div class="lseat${mine?' me':''}${st.kind==='open'?' open':''} ${deck&&deck!=='random'?'d-'+deck:''}">
-      <div class="seat-h">${deck&&deck!=='random'&&st.kind!=='open'?charSVG(deck,'schar'):hidden||deck==='random'?'<span class="mystery" aria-hidden="true">?</span>':'<span class="token" style="--pc:#777"></span>'}<h3>${who}${mine?' · você':''}<small>${tag}${deck==='random'?' · classe aleatória':deck&&!mine&&st.kind!=='open'?' · '+DECKS[deck].name:''}${hidden?' · classe secreta até começar':''}</small></h3>
+      <div class="seat-h">${deck&&deck!=='random'&&st.kind!=='open'?charSVG(deck,'schar'):hidden||deck==='random'?'<span class="mystery" aria-hidden="true">?</span>':'<span class="token" style="--pc:#777"></span>'}<h3>${who}${mine?' · você':''}<small>${tag}${deck==='random'?' · classe aleatória':deck&&!mine&&st.kind!=='open'?' · '+DECKS[deck].name:''}${hidden?(L.randAll?' · classe sorteada ao começar':' · classe secreta até começar'):''}</small></h3>
       ${host&&(st.kind==='open'||st.kind==='bot')?`<div class="seg small"><button data-netseat="${i}:open" aria-pressed="${st.kind==='open'}">Vaga</button><button data-netseat="${i}:bot" aria-pressed="${st.kind==='bot'}">Bot</button></div>`:''}</div>
-      ${picker}${mine&&deck?`<p class="deckblurb"><b>${charName(deck)} · ${charLine(deck)}:</b> ${DECKS[deck].blurb}</p>`:''} ${see&&deck&&deck!=='random'?`<button class="btn ghost peekbtn" data-peek="${deck}">Ver as cartas de ${charName(deck)}</button>`:''}</div>`;};
+      ${picker}${mine&&deck&&!L.randAll&&deck!=='random'?`<p class="deckblurb"><b>${charName(deck)} · ${charLine(deck)}:</b> ${DECKS[deck].blurb}</p>`:''} ${see&&deck&&deck!=='random'?`<button class="btn ghost peekbtn" data-peek="${deck}">Ver as cartas de ${charName(deck)}</button>`:''}</div>`;};
   const link=location.href.split('?')[0].split('#')[0]+'?sala='+L.code;
   const open=L.seats.filter(x=>x.kind==='open').length;
   return `<section class="menu online lobby">
@@ -3147,8 +3150,10 @@ function renderLobby(){
     <div class="roomcode big" aria-label="Código da sala">${L.code.split('').map(c=>`<span>${c}</span>`).join('')}</div>
     <div class="row2 center"><button class="btn ghost" id="netcopy" data-link="${esc(link)}">Copiar convite</button>${navigator.share?`<button class="btn ghost" id="netshare" data-link="${esc(link)}">Compartilhar</button>`:''}</div>
     ${host?`<div class="seg" role="group" aria-label="Número de jogadores">${[2,3,4].map(n=>`<button data-lobbynp="${n}" aria-pressed="${L.np===n}">${n} jogadores</button>`).join('')}</div>
-      <div class="seg small" role="group" aria-label="Movimento"><button data-netomni="0" aria-pressed="${!L.omni}">Só para frente</button><button data-netomni="1" aria-pressed="${!!L.omni}">4 diagonais</button></div>`
-      :`<p class="note">${L.np} jogadores · ${L.omni?'4 diagonais':'só para frente'}. Escolha o seu baralho e espere o anfitrião começar.</p>`}
+      <div class="seg small" role="group" aria-label="Movimento"><button data-netomni="0" aria-pressed="${!L.omni}">Só para frente</button><button data-netomni="1" aria-pressed="${!!L.omni}">4 diagonais</button></div>
+      <div class="seg small" role="group" aria-label="Classes"><button data-lobbyrand="0" aria-pressed="${!L.randAll}">Cada um escolhe</button><button data-lobbyrand="1" aria-pressed="${!!L.randAll}">Classes aleatórias</button></div>`
+      :`<p class="note">${L.np} jogadores · ${L.omni?'4 diagonais':'só para frente'}. ${L.randAll?'Espere o anfitrião começar.':'Escolha o seu baralho e espere o anfitrião começar.'}</p>`}
+    ${L.randAll?'<p class="randnote"><span class="rdq" aria-hidden="true">?</span>Classes aleatórias: ninguém escolhe. Cada jogador recebe uma classe sorteada quando a partida começar.</p>':''}
     <div class="lseats">${L.seats.map(seat).join('')}</div>
     ${host?`<div class="setup-actions"><button class="btn primary" id="netstart">Começar partida</button></div><p class="note center">${open?`${open} vaga${open>1?'s':''} livre${open>1?'s':''} ${open>1?'viram bots':'vira bot'} ao começar.`:'Todos os lugares ocupados.'}</p>`:`<p class="note center waitnote">Esperando o anfitrião começar a partida…</p>`}
   </section>`;
@@ -3464,6 +3469,8 @@ document.addEventListener('click',e=>{
   if(t.dataset.join){netJoin(t.dataset.join);return;}
   if(t.dataset.netnp){ui.netNp=+t.dataset.netnp;render();return;}
   if(t.dataset.lobbynp){netSetNp(+t.dataset.lobbynp);return;}
+  if(t.dataset.netrand!==undefined&&!NET.on){ui.netRand=t.dataset.netrand==='1';render();return;}
+  if(t.dataset.lobbyrand!==undefined){NET.lobby.randAll=t.dataset.lobbyrand==='1';netHostRefresh(false);render();return;}
   if(t.dataset.netomni!==undefined){NET.lobby.omni=t.dataset.netomni==='1';netHostRefresh(false);render();return;}
   if(t.dataset.netseat){const[i,k]=t.dataset.netseat.split(':');const st=NET.lobby.seats[+i];if(st.kind==='open'||st.kind==='bot'){st.kind=k;st.deck=k==='bot'?(st.deck||'random'):null;netHostRefresh(false);render();}return;}
   if(t.dataset.netdeck){const[i,k]=t.dataset.netdeck.split(':');const st=NET.lobby.seats[+i];st.deck=k;if(+i===NET.seat)lsSet('damas-deck',k);
@@ -3478,7 +3485,7 @@ document.addEventListener('click',e=>{
     case 'tutplay':{ui.tutDeck=null;const D=Object.keys(DECKS).filter(k=>k!==(ui.tutPick||'ataque'));startGame([{deck:ui.tutPick||'ataque',ctrl:'human'},{deck:D[Math.floor(Math.random()*D.length)],ctrl:'bot'}],false);return;}
     case 'tutdeck':ui.tutDeck=t.dataset.deck;renderOverlay();return;
     case 'closetutdeck':ui.tutDeck=null;renderOverlay();return;
-    case 'netcreate':netCreate(ui.netNp||2);return;
+    case 'netcreate':netCreate(ui.netNp||2,!!ui.netRand);return;
     case 'joinbycode':netJoin(($('joincode')||{}).value);return;
     case 'netleave':netLeave();window.scrollTo(0,0);return;
     case 'netstart':netBeginGame();return;
